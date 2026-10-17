@@ -1,0 +1,17 @@
+{
+  "name": "smoke",
+  "description": "Seconds-long end-to-end check of every topology and algorithm. Run before any long suite.",
+  "repetitions": 2,
+  "warmup": 1,
+  "matrix": {
+    "topology": ["chain", "layered", "reconvergent", "random"],
+    "nodes": [3000],
+    "layers": [30],
+    "fanout": [4],
+    "seed": [20261017],
+    "representation": "both",
+    "algorithm": "all",
+    "threads": "1,2,4",
+    "update_ratio": "0,0.01,0.05,0.10"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "baseline",
+  "description": "Plan §5.2 baseline graph; Experiment B (four topologies, same node count and fanout target) and Experiment E (BFS/DFS/Kahn), both representations, 3 seeds.",
+  "repetitions": 10,
+  "warmup": 2,
+  "matrix": {
+    "topology": ["chain", "layered", "reconvergent", "random"],
+    "nodes": [100000],
+    "layers": [100],
+    "fanout": [4],
+    "seed": [20261017, 20261018, 20261019],
+    "representation": "both",
+    "algorithm": "traversal,timing,structure"
+  }
+}

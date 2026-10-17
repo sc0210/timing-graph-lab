@@ -1,0 +1,15 @@
+{
+  "name": "scaling",
+  "description": "Experiment A: List vs CSR from 10K to 1M nodes (A1-A4), 3 seeds. 1M nodes needs roughly 1.5 GB RAM; a failed point is recorded in .meta.json, not dropped.",
+  "repetitions": 10,
+  "warmup": 2,
+  "matrix": {
+    "topology": ["layered", "reconvergent", "random"],
+    "nodes": [10000, 100000, 500000, 1000000],
+    "layers": [100],
+    "fanout": [4],
+    "seed": [20261017, 20261018, 20261019],
+    "representation": "both",
+    "algorithm": "traversal,timing,structure"
+  }
+}

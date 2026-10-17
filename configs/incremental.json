@@ -1,0 +1,32 @@
+{
+  "name": "incremental",
+  "description": "Experiment C: update ratio 0/1/5/10% (plan \u00a78C) plus 0.01% and 0.1% to locate the break-even point, x localized/distributed/critical x conservative/early-stop, vs Full Recompute.",
+  "repetitions": 10,
+  "warmup": 2,
+  "matrix": {
+    "topology": [
+      "layered",
+      "reconvergent",
+      "random"
+    ],
+    "nodes": [
+      100000
+    ],
+    "layers": [
+      100
+    ],
+    "fanout": [
+      4
+    ],
+    "seed": [
+      20261017,
+      20261018,
+      20261019
+    ],
+    "representation": "csr",
+    "algorithm": "incremental",
+    "update_ratio": "0,0.0001,0.001,0.01,0.05,0.10",
+    "update_dist": "localized,distributed,critical",
+    "inc_mode": "conservative,early_stop"
+  }
+}

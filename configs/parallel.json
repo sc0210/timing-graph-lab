@@ -1,0 +1,28 @@
+{
+  "name": "parallel",
+  "description": "Experiment D: 1/2/4 threads, spin vs blocking barrier. Chain (one node per level, no parallelism) is kept on purpose but capped at 100K nodes: with a blocking barrier it costs ~40 us per level. Extend threads to the machine's core count.",
+  "repetitions": 10,
+  "warmup": 2,
+  "matrices": [
+    {
+      "topology": ["layered", "reconvergent", "random"],
+      "nodes": [100000, 1000000],
+      "layers": [100],
+      "fanout": [4],
+      "seed": [20261017, 20261018, 20261019],
+      "representation": "csr",
+      "algorithm": "timing,parallel",
+      "threads": "1,2,4",
+      "barrier": "spin,block"
+    },
+    {
+      "topology": ["chain"],
+      "nodes": [100000],
+      "seed": [20261017],
+      "representation": "csr",
+      "algorithm": "timing,parallel",
+      "threads": "1,2,4",
+      "barrier": "spin,block"
+    }
+  ]
+}
