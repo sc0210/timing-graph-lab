@@ -1,0 +1,78 @@
+{
+  "config": {
+    "name": "parallel",
+    "description": "Experiment D: 1/2/4 threads, spin vs blocking barrier. Chain (one node per level, no parallelism) is kept on purpose but capped at 100K nodes: with a blocking barrier it costs ~40 us per level. Extend threads to the machine's core count.",
+    "repetitions": 10,
+    "warmup": 2,
+    "matrices": [
+      {
+        "topology": [
+          "layered",
+          "reconvergent",
+          "random"
+        ],
+        "nodes": [
+          100000,
+          1000000
+        ],
+        "layers": [
+          100
+        ],
+        "fanout": [
+          4
+        ],
+        "seed": [
+          20261017,
+          20261018,
+          20261019
+        ],
+        "representation": "csr",
+        "algorithm": "timing,parallel",
+        "threads": "1,2,4",
+        "barrier": "spin,block"
+      },
+      {
+        "topology": [
+          "chain"
+        ],
+        "nodes": [
+          100000
+        ],
+        "seed": [
+          20261017
+        ],
+        "representation": "csr",
+        "algorithm": "timing,parallel",
+        "threads": "1,2,4",
+        "barrier": "spin,block"
+      }
+    ]
+  },
+  "config_path": "configs/parallel.json",
+  "config_sha256": "17ef083274fd60775490324f6602e0a53913e943b40e3174ef9aa0491f119e17",
+  "started": "20261017-153443",
+  "commit": "43a62d58b247",
+  "dirty": false,
+  "build_type": "Release",
+  "cxx_compiler": "/usr/bin/c++",
+  "compiler_version": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cxx_flags": " -O3 -DNDEBUG",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "logical_cpus": 4,
+  "mem_total_bytes": 16874930176,
+  "os": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+  "kernel": "6.18.44-fc-v139",
+  "cpu_governor": "unknown",
+  "loadavg_at_start": "1.00 1.00 0.79 1/107 6695",
+  "env": {},
+  "thread_strategy": "fixed LevelPool per thread count (std::thread), created once per measurement and timed as pool_start",
+  "perf": false,
+  "gates": {
+    "A_B_release_tests": true,
+    "C_asan_ubsan": true,
+    "C_tsan": true
+  },
+  "finished": "20261017-154841",
+  "loadavg_at_end": "1.61 1.31 1.07 1/108 8666",
+  "failed_points": []
+}

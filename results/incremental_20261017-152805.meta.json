@@ -1,0 +1,61 @@
+{
+  "config": {
+    "name": "incremental",
+    "description": "Experiment C: update ratio 0/1/5/10% (plan \u00a78C) plus 0.01% and 0.1% to locate the break-even point, x localized/distributed/critical x conservative/early-stop, vs Full Recompute.",
+    "repetitions": 10,
+    "warmup": 2,
+    "matrix": {
+      "topology": [
+        "layered",
+        "reconvergent",
+        "random"
+      ],
+      "nodes": [
+        100000
+      ],
+      "layers": [
+        100
+      ],
+      "fanout": [
+        4
+      ],
+      "seed": [
+        20261017,
+        20261018,
+        20261019
+      ],
+      "representation": "csr",
+      "algorithm": "incremental",
+      "update_ratio": "0,0.0001,0.001,0.01,0.05,0.10",
+      "update_dist": "localized,distributed,critical",
+      "inc_mode": "conservative,early_stop"
+    }
+  },
+  "config_path": "configs/incremental.json",
+  "config_sha256": "d0f64f32510f934f2e7bedafae301d17d94c619b987bf84a4d5950a97ca0b336",
+  "started": "20261017-152805",
+  "commit": "43a62d58b247",
+  "dirty": false,
+  "build_type": "Release",
+  "cxx_compiler": "/usr/bin/c++",
+  "compiler_version": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cxx_flags": " -O3 -DNDEBUG",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "logical_cpus": 4,
+  "mem_total_bytes": 16874930176,
+  "os": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+  "kernel": "6.18.44-fc-v139",
+  "cpu_governor": "unknown",
+  "loadavg_at_start": "1.41 0.98 0.65 1/110 6056",
+  "env": {},
+  "thread_strategy": "fixed LevelPool per thread count (std::thread), created once per measurement and timed as pool_start",
+  "perf": false,
+  "gates": {
+    "A_B_release_tests": true,
+    "C_asan_ubsan": true,
+    "C_tsan": true
+  },
+  "finished": "20261017-153337",
+  "loadavg_at_end": "1.00 1.00 0.77 1/109 6118",
+  "failed_points": []
+}

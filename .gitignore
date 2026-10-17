@@ -1,4 +1,3 @@
 build*/
-results/*
-!results/.gitkeep
+results/*.tmp
 __pycache__/
