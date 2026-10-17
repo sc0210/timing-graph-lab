@@ -33,3 +33,16 @@ GCC 13.3.0, Release (`-O3`), threads not pinned, CPU governor not exposed, `perf
 unavailable. The machine is shared, so repetition-level CV is often 20–35 %. Treat
 these numbers as a pilot that exercises the full pipeline. They are not definitive
 measurements. Re-run on a dedicated machine before drawing performance conclusions (plan §9.3).
+
+## Open observation: graph build cost at 1M nodes
+
+Building either representation of a 1M-node, 4M-edge graph takes 2.4–3.1 s (≈ 600 ns per
+edge), while one full arrival pass over it takes ≈ 150 ms. Timing the CSR constructor's
+passes separately (in a scratch program, not committed) put 2.1 s of it in the scatter
+pass. That pass writes each edge into four ≈ 16–32 MB arrays at random positions.
+The counting pass makes random increments into 8 MB arrays and takes 175 ms. The cost
+barely changes with `--no-shuffle` and is not explained by first-touch page faults
+(≈ 3 µs per 4 KiB page here, ≈ 80 ms total). Requesting transparent huge pages via
+`madvise` gave only ≈ 15 %. A TLB / nested-paging effect of this VM is plausible but
+unconfirmed: `perf` is unavailable here. Measure on bare metal with hardware counters
+before drawing conclusions about build cost (plan §9.3).

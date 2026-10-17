@@ -100,7 +100,7 @@ in the same process (Â§10 step 7). Each suite was preceded by a passing Gate Aâ€
 | baseline | 2,664 | 0 | 0 | 0 |
 | incremental | 4,878 | 0 | 0 | 0 |
 | parallel | 4,598 | 0 | 0 | 0 |
-| scaling | SCALING_ROWS | SCALING_FAIL | SCALING_BIT | SCALING_ERR |
+| scaling | 7,992 | 0 | 0 | 0 |
 
 For graphs with at most 20,000 edges, each run also compares the reference engine with the
 relaxation oracle (`phase=oracle_check`). No suite had failed or missing configuration points
