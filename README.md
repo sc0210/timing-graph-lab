@@ -23,6 +23,26 @@ python3 scripts/run_suite.py configs/baseline.json        # Experiment B + E (+ 
 python3 scripts/analyze_results.py results/baseline_*.csv --out results/baseline_report.md
 ```
 
+### Shell environment
+
+`env.sh` puts the benchmark binary and the scripts on `PATH` and defines helpers, so
+everything can be run from any directory (bash or zsh):
+
+```bash
+source env.sh                     # uses ./build; or: TGL_BUILD_DIR=build-tsan source env.sh
+tgl_build                         # configure + build (Release; sanitizer set for build-asan/build-tsan)
+tgl_test                          # ctest in the current build dir (extra args go to ctest, e.g. -L unit)
+timing_graph_bench --help         # the binary, now on PATH
+tgl_suite smoke                   # = run_suite.py configs/smoke.json --build-dir $TGL_BUILD_DIR
+analyze_results.py $TGL_RESULTS_DIR/smoke_*.csv
+tgl_info                          # show paths and build type
+tgl_unload                        # restore PATH and remove everything env.sh set
+```
+
+Exported variables: `TGL_ROOT`, `TGL_BUILD_DIR`, `TGL_BENCH`, `TGL_RESULTS_DIR`, plus
+defaults for `ASAN_OPTIONS`, `UBSAN_OPTIONS`, `TSAN_OPTIONS` (halt on first report) and
+`PYTHONDONTWRITEBYTECODE`. Values you already set are kept. Sourcing again is safe.
+
 A single run:
 
 ```bash
@@ -55,6 +75,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `scripts/run_suite.py` | SOP runner: gates → matrix of runs → CSV + `.meta.json` + `.graphs.jsonl` (§10) |
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |
 | `scripts/plot_results.py` | Scaling / incremental / speedup plots (needs matplotlib) |
+| `env.sh` | Sourceable shell environment: PATH, variables, `tgl_*` helpers |
 | `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `incremental` (Exp. C) |
 | `docs/experiment_protocol.md` | What exactly each phase times, statistics, environment recording |
 | `docs/validation_report.md` | Test levels, gate results, bugs found, verification evidence |
