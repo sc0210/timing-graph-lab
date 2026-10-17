@@ -33,7 +33,7 @@ struct IncrementalStats {
   std::uint64_t backward_evals = 0;  // nodes whose RT was recomputed
   std::uint64_t at_changed = 0;
   std::uint64_t rt_changed = 0;
-  std::uint64_t changed_nodes = 0;   // nodes whose AT or RT (hence slack) changed
+  std::uint64_t changed_nodes = 0;  // nodes whose AT or RT (hence slack) changed
 };
 
 struct AffectedRegion {

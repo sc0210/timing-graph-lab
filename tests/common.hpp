@@ -22,6 +22,8 @@ TimingState full_sta(const G& g, const TimingConstraints& c) {
 }
 
 inline bool matches(const TimingState& got, const TimingState& ref) { return compare_timing(got, ref).pass; }
-inline bool bit_equal(const TimingState& a, const TimingState& b) { return a.at == b.at && a.rt == b.rt && a.slack == b.slack; }
+inline bool bit_equal(const TimingState& a, const TimingState& b) {
+  return a.at == b.at && a.rt == b.rt && a.slack == b.slack;
+}
 
 }  // namespace tgl::test

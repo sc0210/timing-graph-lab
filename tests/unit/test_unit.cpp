@@ -191,17 +191,17 @@ TEST(T12_parallel_matches_single_thread) {
   const TimingState serial = full_sta(g, c);
   const Levels L = levelize(g, kahn_topo_sort(g).order);
   for (BarrierKind kind : {BarrierKind::Spin, BarrierKind::Block})
-  for (int threads : {1, 2, 3, 4, 8}) {
-    LevelPool pool(threads, kind);
-    for (int rep = 0; rep < 3; ++rep) {  // pool reuse across runs
-      TimingState p;
-      p.resize(g.num_nodes());
-      propagate_arrival_parallel(g, L, c, p.at, pool);
-      propagate_required_parallel(g, L, c, p.rt, pool);
-      compute_slack(p);
-      CHECK(matches(p, serial));
+    for (int threads : {1, 2, 3, 4, 8}) {
+      LevelPool pool(threads, kind);
+      for (int rep = 0; rep < 3; ++rep) {  // pool reuse across runs
+        TimingState p;
+        p.resize(g.num_nodes());
+        propagate_arrival_parallel(g, L, c, p.at, pool);
+        propagate_required_parallel(g, L, c, p.rt, pool);
+        compute_slack(p);
+        CHECK(matches(p, serial));
+      }
     }
-  }
 }
 
 TEST(T13_list_and_csr_agree) {

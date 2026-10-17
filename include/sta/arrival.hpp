@@ -44,8 +44,8 @@ void propagate_arrival_push(const G& g, std::span<const NodeId> topo_order, cons
 }
 
 template <class G>
-void propagate_arrival_parallel(const G& g, const Levels& levels, const TimingConstraints& c,
-                                std::vector<Delay>& at, LevelPool& pool) {
+void propagate_arrival_parallel(const G& g, const Levels& levels, const TimingConstraints& c, std::vector<Delay>& at,
+                                LevelPool& pool) {
   at.resize(g.num_nodes());
   pool.run(levels, false, [&](std::span<const NodeId> nodes) {
     for (NodeId v : nodes) at[v] = eval_arrival(g, at, c, v);

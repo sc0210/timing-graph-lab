@@ -29,7 +29,7 @@ struct GenParams {
   double delay_min = 1.0;
   double delay_max = 100.0;
   std::string delay_dist = "real";  // real: uniform double in [min, max); int: uniform integer in [min, max]
-  bool shuffle = true;  // randomly relabel node ids and permute edge order
+  bool shuffle = true;              // randomly relabel node ids and permute edge order
 };
 
 EdgeList generate(const GenParams& p);

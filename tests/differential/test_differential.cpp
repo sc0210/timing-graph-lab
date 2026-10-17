@@ -31,8 +31,11 @@ TEST(oracles_agree_exhaustively_on_tiny_graphs) {
   int graphs = 0;
   for (const char* kind : kKinds)
     for (std::uint64_t seed = 1; seed <= 40; ++seed) {
-      const EdgeList el = generate({.kind = kind, .nodes = static_cast<NodeId>(6 + seed % 12), .seed = seed,
-                                    .fanout = 1.0 + double(seed % 4) * 0.6, .layers = static_cast<NodeId>(3 + seed % 3)});
+      const EdgeList el = generate({.kind = kind,
+                                    .nodes = static_cast<NodeId>(6 + seed % 12),
+                                    .seed = seed,
+                                    .fanout = 1.0 + double(seed % 4) * 0.6,
+                                    .layers = static_cast<NodeId>(3 + seed % 3)});
       Rng rng(seed);
       for (int variant = 0; variant < 4; ++variant) {
         const TimingConstraints c = random_constraints(el.num_nodes, rng, variant);
@@ -132,7 +135,8 @@ TEST(conservative_region_bounds_early_stop_work) {
   IncrementalTimer t(g, {.default_required = 4000});
   Rng rng(1);
   for (int i = 0; i < 20; ++i) {
-    for (int b = 0; b < 3; ++b) t.set_edge_delay(static_cast<EdgeId>(rng.uniform(0, el.num_edges() - 1)), 100 * rng.unit());
+    for (int b = 0; b < 3; ++b)
+      t.set_edge_delay(static_cast<EdgeId>(rng.uniform(0, el.num_edges() - 1)), 100 * rng.unit());
     const AffectedRegion region = t.affected_region();
     // Re-apply the same pending set under both modes via a copy of the graph state.
     const auto st = t.update(IncMode::EarlyStop);

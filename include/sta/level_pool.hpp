@@ -111,8 +111,10 @@ class LevelPool {
   }
 
   void wait() {
-    if (kind_ == BarrierKind::Spin) spin_.arrive_and_wait();
-    else block_.arrive_and_wait();
+    if (kind_ == BarrierKind::Spin)
+      spin_.arrive_and_wait();
+    else
+      block_.arrive_and_wait();
   }
 
   int n_;

@@ -17,8 +17,11 @@ template <class F>
 void for_graphs(F f) {
   for (const char* kind : kKinds)
     for (std::uint64_t seed = 1; seed <= 25; ++seed) {
-      GenParams p{.kind = kind, .nodes = static_cast<NodeId>(50 + seed * 37), .seed = seed,
-                  .fanout = 1.0 + double(seed % 5) * 0.7, .layers = static_cast<NodeId>(2 + seed % 9),
+      GenParams p{.kind = kind,
+                  .nodes = static_cast<NodeId>(50 + seed * 37),
+                  .seed = seed,
+                  .fanout = 1.0 + double(seed % 5) * 0.7,
+                  .layers = static_cast<NodeId>(2 + seed % 9),
                   .delay_dist = seed % 2 ? "real" : "int"};
       f(generate(p), p);
     }
@@ -44,7 +47,8 @@ TEST(generators_are_deterministic_per_seed) {  // plan §5.3 item 6
     CHECK_EQ(fingerprint(generate(p)), fingerprint(generate(p)));
     GenParams q = p;
     q.seed = 6;
-    if (std::string(kind) != "chain" || q.delay_max > q.delay_min) CHECK(fingerprint(generate(p)) != fingerprint(generate(q)));
+    if (std::string(kind) != "chain" || q.delay_max > q.delay_min)
+      CHECK(fingerprint(generate(p)) != fingerprint(generate(q)));
   }
 }
 
@@ -85,8 +89,14 @@ TEST(arrival_dominates_every_edge_and_is_tight) {
     }
     for (NodeId v = 0; v < el.num_nodes; ++v) {
       CHECK(std::isfinite(s.at[v]) && std::isfinite(s.rt[v]));
-      if (g.fanin(v).empty()) CHECK_EQ(s.at[v], 0.0); else CHECK(tight_at[v]);  // some pred attains the max
-      if (g.fanout(v).empty()) CHECK_EQ(s.rt[v], 1000.0); else CHECK(tight_rt[v]);
+      if (g.fanin(v).empty())
+        CHECK_EQ(s.at[v], 0.0);
+      else
+        CHECK(tight_at[v]);  // some pred attains the max
+      if (g.fanout(v).empty())
+        CHECK_EQ(s.rt[v], 1000.0);
+      else
+        CHECK(tight_rt[v]);
       CHECK_EQ(s.slack[v], s.rt[v] - s.at[v]);
     }
   });

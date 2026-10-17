@@ -97,7 +97,7 @@ std::uint64_t Rng::next() {
 
 std::uint64_t Rng::uniform(std::uint64_t lo, std::uint64_t hi) {
   const std::uint64_t range = hi - lo + 1;
-  if (range == 0) return next();  // full 64-bit range
+  if (range == 0) return next();                                // full 64-bit range
   const std::uint64_t limit = UINT64_MAX - UINT64_MAX % range;  // rejection removes modulo bias
   std::uint64_t x;
   do x = next();

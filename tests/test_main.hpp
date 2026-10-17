@@ -27,27 +27,27 @@ struct Registrar {
 
 #define TGL_CAT2(a, b) a##b
 #define TGL_CAT(a, b) TGL_CAT2(a, b)
-#define TEST(name)                                                                       \
-  static void name();                                                                    \
-  static ::tgl::test::Registrar TGL_CAT(reg_, name)(#name, name);                        \
+#define TEST(name)                                                \
+  static void name();                                             \
+  static ::tgl::test::Registrar TGL_CAT(reg_, name)(#name, name); \
   static void name()
 
-#define CHECK(cond)                                                                      \
-  do {                                                                                   \
-    if (!(cond)) {                                                                       \
-      std::fprintf(stderr, "  %s:%d: CHECK failed: %s\n", __FILE__, __LINE__, #cond);    \
-      ++::tgl::test::failures();                                                         \
-    }                                                                                    \
+#define CHECK(cond)                                                                   \
+  do {                                                                                \
+    if (!(cond)) {                                                                    \
+      std::fprintf(stderr, "  %s:%d: CHECK failed: %s\n", __FILE__, __LINE__, #cond); \
+      ++::tgl::test::failures();                                                      \
+    }                                                                                 \
   } while (0)
 
-#define CHECK_EQ(a, b)                                                                   \
-  do {                                                                                   \
-    const auto va_ = (a);                                                                \
-    const auto vb_ = (b);                                                                \
-    if (!(va_ == vb_)) {                                                                 \
+#define CHECK_EQ(a, b)                                                                          \
+  do {                                                                                          \
+    const auto va_ = (a);                                                                       \
+    const auto vb_ = (b);                                                                       \
+    if (!(va_ == vb_)) {                                                                        \
       std::fprintf(stderr, "  %s:%d: CHECK_EQ failed: %s == %s\n", __FILE__, __LINE__, #a, #b); \
-      ++::tgl::test::failures();                                                         \
-    }                                                                                    \
+      ++::tgl::test::failures();                                                                \
+    }                                                                                           \
   } while (0)
 
 int main(int argc, char** argv) {

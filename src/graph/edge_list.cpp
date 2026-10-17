@@ -15,9 +15,12 @@ bool validate(const EdgeList& el, std::string* error, bool allow_self_loops) {
   for (std::size_t i = 0; i < el.edges.size(); ++i) {
     const Edge& e = el.edges[i];
     const char* why = nullptr;
-    if (e.src >= el.num_nodes || e.dst >= el.num_nodes) why = "node id out of range";
-    else if (e.src == e.dst && !allow_self_loops) why = "self loop";
-    else if (!std::isfinite(e.delay) || e.delay < 0) why = "delay must be finite and non-negative";
+    if (e.src >= el.num_nodes || e.dst >= el.num_nodes)
+      why = "node id out of range";
+    else if (e.src == e.dst && !allow_self_loops)
+      why = "self loop";
+    else if (!std::isfinite(e.delay) || e.delay < 0)
+      why = "delay must be finite and non-negative";
     if (why) {
       if (error) *error = "edge " + std::to_string(i) + ": " + why;
       return false;

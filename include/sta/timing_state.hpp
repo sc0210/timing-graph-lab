@@ -14,8 +14,8 @@
 namespace tgl {
 
 struct TimingConstraints {
-  Delay default_arrival = 0;   // a0 for every source without an override
-  Delay default_required = 0;  // r0 for every sink without an override (e.g. clock period)
+  Delay default_arrival = 0;             // a0 for every source without an override
+  Delay default_required = 0;            // r0 for every sink without an override (e.g. clock period)
   std::vector<Delay> arrival_override;   // empty, or size n (value used only for sources)
   std::vector<Delay> required_override;  // empty, or size n (value used only for sinks)
 

@@ -29,8 +29,8 @@ void propagate_required(const G& g, std::span<const NodeId> topo_order, const Ti
 
 // Every fanout of a level-k node is at a level > k, so levels are processed high to low.
 template <class G>
-void propagate_required_parallel(const G& g, const Levels& levels, const TimingConstraints& c,
-                                 std::vector<Delay>& rt, LevelPool& pool) {
+void propagate_required_parallel(const G& g, const Levels& levels, const TimingConstraints& c, std::vector<Delay>& rt,
+                                 LevelPool& pool) {
   rt.resize(g.num_nodes());
   pool.run(levels, true, [&](std::span<const NodeId> nodes) {
     for (NodeId v : nodes) rt[v] = eval_required(g, rt, c, v);

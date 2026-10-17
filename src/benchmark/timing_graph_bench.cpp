@@ -76,7 +76,9 @@ struct Options {
   std::string graph_stats_out, dump_graph;
   std::string commit = "unknown", run_id, notes;
 
-  bool has(const std::string& a) const { return std::find(algorithms.begin(), algorithms.end(), a) != algorithms.end(); }
+  bool has(const std::string& a) const {
+    return std::find(algorithms.begin(), algorithms.end(), a) != algorithms.end();
+  }
 };
 
 void usage() {
@@ -138,18 +140,30 @@ Options parse(int argc, char** argv) {
       for (auto& s : split(val())) v.push_back(std::stod(s));
       return v;
     };
-    if (k == "--topology" || k == "--gen") o.gen.kind = val();
-    else if (k == "--nodes") o.gen.nodes = static_cast<NodeId>(std::stoul(val()));
-    else if (k == "--layers") o.gen.layers = static_cast<NodeId>(std::stoul(val()));
-    else if (k == "--span") o.gen.span = static_cast<NodeId>(std::stoul(val()));
-    else if (k == "--fanout") o.gen.fanout = std::stod(val());
-    else if (k == "--delay-min") o.gen.delay_min = std::stod(val());
-    else if (k == "--delay-max") o.gen.delay_max = std::stod(val());
-    else if (k == "--delay-dist") o.gen.delay_dist = val();
-    else if (k == "--no-shuffle") o.gen.shuffle = false;
-    else if (k == "--seed") o.gen.seed = std::stoull(val());
-    else if (k == "--input") o.input = val();
-    else if (k == "--dump-graph") o.dump_graph = val();
+    if (k == "--topology" || k == "--gen")
+      o.gen.kind = val();
+    else if (k == "--nodes")
+      o.gen.nodes = static_cast<NodeId>(std::stoul(val()));
+    else if (k == "--layers")
+      o.gen.layers = static_cast<NodeId>(std::stoul(val()));
+    else if (k == "--span")
+      o.gen.span = static_cast<NodeId>(std::stoul(val()));
+    else if (k == "--fanout")
+      o.gen.fanout = std::stod(val());
+    else if (k == "--delay-min")
+      o.gen.delay_min = std::stod(val());
+    else if (k == "--delay-max")
+      o.gen.delay_max = std::stod(val());
+    else if (k == "--delay-dist")
+      o.gen.delay_dist = val();
+    else if (k == "--no-shuffle")
+      o.gen.shuffle = false;
+    else if (k == "--seed")
+      o.gen.seed = std::stoull(val());
+    else if (k == "--input")
+      o.input = val();
+    else if (k == "--dump-graph")
+      o.dump_graph = val();
     else if (k == "--representation") {
       const auto v = val();
       o.reprs = v == "both" ? std::vector<std::string>{"list", "csr"} : split(v);
@@ -159,27 +173,45 @@ Options parse(int argc, char** argv) {
     } else if (k == "--threads") {
       o.threads.clear();
       for (auto& s : split(val())) o.threads.push_back(std::stoi(s));
-    } else if (k == "--barrier") o.barriers = split(val());
-    else if (k == "--update-ratio") o.update_ratios = doubles();
-    else if (k == "--update-dist") o.update_dists = split(val());
-    else if (k == "--inc-mode") o.inc_modes = split(val());
-    else if (k == "--insert-ratio") o.insert_ratio = std::stod(val());
-    else if (k == "--source-arrival-spread") o.source_arrival_spread = std::stod(val());
-    else if (k == "--period") o.period = std::stod(val());
-    else if (k == "--repetitions" || k == "--repeat") o.repetitions = std::stoi(val());
-    else if (k == "--warmup") o.warmup = std::stoi(val());
-    else if (k == "--oracle-max-edges") o.oracle_max_edges = std::stoull(val());
-    else if (k == "--tol-abs") o.tol.abs = std::stod(val());
-    else if (k == "--tol-rel") o.tol.rel = std::stod(val());
-    else if (k == "--output" || k == "--out") o.output = val();
-    else if (k == "--graph-stats") o.graph_stats_out = val();
-    else if (k == "--commit") o.commit = val();
-    else if (k == "--run-id") o.run_id = val();
-    else if (k == "--notes") o.notes = val();
+    } else if (k == "--barrier")
+      o.barriers = split(val());
+    else if (k == "--update-ratio")
+      o.update_ratios = doubles();
+    else if (k == "--update-dist")
+      o.update_dists = split(val());
+    else if (k == "--inc-mode")
+      o.inc_modes = split(val());
+    else if (k == "--insert-ratio")
+      o.insert_ratio = std::stod(val());
+    else if (k == "--source-arrival-spread")
+      o.source_arrival_spread = std::stod(val());
+    else if (k == "--period")
+      o.period = std::stod(val());
+    else if (k == "--repetitions" || k == "--repeat")
+      o.repetitions = std::stoi(val());
+    else if (k == "--warmup")
+      o.warmup = std::stoi(val());
+    else if (k == "--oracle-max-edges")
+      o.oracle_max_edges = std::stoull(val());
+    else if (k == "--tol-abs")
+      o.tol.abs = std::stod(val());
+    else if (k == "--tol-rel")
+      o.tol.rel = std::stod(val());
+    else if (k == "--output" || k == "--out")
+      o.output = val();
+    else if (k == "--graph-stats")
+      o.graph_stats_out = val();
+    else if (k == "--commit")
+      o.commit = val();
+    else if (k == "--run-id")
+      o.run_id = val();
+    else if (k == "--notes")
+      o.notes = val();
     else if (k == "-h" || k == "--help") {
       usage();
       std::exit(0);
-    } else throw std::invalid_argument("unknown option " + k);
+    } else
+      throw std::invalid_argument("unknown option " + k);
   }
   for (auto& r : o.reprs) {
     if (r == "adj") r = "list";
@@ -189,7 +221,8 @@ Options parse(int argc, char** argv) {
     if (a != "traversal" && a != "timing" && a != "parallel" && a != "structure" && a != "incremental")
       throw std::invalid_argument("unknown algorithm " + a);
   for (auto& d : o.update_dists)
-    if (d != "localized" && d != "distributed" && d != "critical") throw std::invalid_argument("unknown update dist " + d);
+    if (d != "localized" && d != "distributed" && d != "critical")
+      throw std::invalid_argument("unknown update dist " + d);
   for (auto& m : o.inc_modes)
     if (m != "conservative" && m != "early_stop") throw std::invalid_argument("unknown inc mode " + m);
   for (double r : o.update_ratios)
@@ -284,13 +317,13 @@ class Report {
       std::string notes = o_.notes;
       if (!r.notes.empty()) notes += (notes.empty() ? "" : ";") + r.notes;
       std::snprintf(buf, sizeof buf, "%.3f", r.time_ns / 1e3);
-      *os << csv_escape(o_.run_id) << ',' << o_.commit << ',' << o_.gen.seed << ',' << r.update_seed << ','
-          << topology << ',' << g_.stats.nodes << ',' << g_.stats.edges << ',' << o_.gen.fanout << ','
-          << g_.stats.sources << ',' << g_.stats.sinks << ',' << g_.stats.max_fanout << ',' << g_.stats.max_fanin
-          << ',' << g_.depth << ',' << g_.lw_median << ',' << g_.lw_max << ',' << r.repr << ',' << r.phase << ','
-          << r.algorithm << ',' << r.threads << ',' << r.rep << ',' << r.update_ratio << ',' << r.update_dist << ','
-          << r.updated_edges << ',' << r.affected_nodes << ',' << r.changed_nodes << ',' << buf << ',' << r.work
-          << ',' << eps << ',' << r.mem_bytes << ',' << r.peak_rss << ',' << (r.cmp.pass ? "true" : "false") << ','
+      *os << csv_escape(o_.run_id) << ',' << o_.commit << ',' << o_.gen.seed << ',' << r.update_seed << ',' << topology
+          << ',' << g_.stats.nodes << ',' << g_.stats.edges << ',' << o_.gen.fanout << ',' << g_.stats.sources << ','
+          << g_.stats.sinks << ',' << g_.stats.max_fanout << ',' << g_.stats.max_fanin << ',' << g_.depth << ','
+          << g_.lw_median << ',' << g_.lw_max << ',' << r.repr << ',' << r.phase << ',' << r.algorithm << ','
+          << r.threads << ',' << r.rep << ',' << r.update_ratio << ',' << r.update_dist << ',' << r.updated_edges << ','
+          << r.affected_nodes << ',' << r.changed_nodes << ',' << buf << ',' << r.work << ',' << eps << ','
+          << r.mem_bytes << ',' << r.peak_rss << ',' << (r.cmp.pass ? "true" : "false") << ','
           << (r.cmp.bitwise ? "true" : "false") << ',' << r.cmp.max_abs_err << ',' << hex(r.checksum) << ','
           << hex(g_.fp) << ',' << compiler << ',' << TGL_BUILD_TYPE << ',' << flags << ',' << cpu << ','
           << csv_escape(notes) << '\n';
@@ -330,9 +363,13 @@ CompareResult fail() {
 template <class G>
 std::string repr_name();
 template <>
-std::string repr_name<AdjacencyList>() { return "list"; }
+std::string repr_name<AdjacencyList>() {
+  return "list";
+}
 template <>
-std::string repr_name<CsrGraph>() { return "csr"; }
+std::string repr_name<CsrGraph>() {
+  return "csr";
+}
 
 // New edges for the structure phase: random forward pairs in topological order (keeps a DAG).
 std::vector<Edge> insertion_set(const EdgeList& el, const std::vector<NodeId>& order, const Options& o) {
@@ -361,9 +398,15 @@ void bench_repr(Context& cx, int r) {
   G g(el);
   const auto t_build = sw_build.elapsed_ns();
   {
-    Row row{.repr = name, .phase = "build", .algorithm = name == "csr" ? "counting_sort" : "push_back", .rep = r,
-            .time_ns = t_build, .work = m, .mem_bytes = g.memory_bytes()};
-    if constexpr (std::is_same_v<G, CsrGraph>) row.notes = "update_index_bytes=" + std::to_string(g.update_index_bytes());
+    Row row{.repr = name,
+            .phase = "build",
+            .algorithm = name == "csr" ? "counting_sort" : "push_back",
+            .rep = r,
+            .time_ns = t_build,
+            .work = m,
+            .mem_bytes = g.memory_bytes()};
+    if constexpr (std::is_same_v<G, CsrGraph>)
+      row.notes = "update_index_bytes=" + std::to_string(g.update_index_bytes());
     rep.add(row);
   }
 
@@ -373,27 +416,51 @@ void bench_repr(Context& cx, int r) {
   if (!topo.is_dag) throw std::runtime_error("graph contains a cycle (Kahn)");
   const bool topo_ok = is_topological_order(g, topo.order);
   std::string order_note;
-  if (cx.first_kahn_order.empty()) cx.first_kahn_order = topo.order;
-  else order_note = std::string("same_order_as_first_repr=") + (cx.first_kahn_order == topo.order ? "1" : "0");
+  if (cx.first_kahn_order.empty())
+    cx.first_kahn_order = topo.order;
+  else
+    order_note = std::string("same_order_as_first_repr=") + (cx.first_kahn_order == topo.order ? "1" : "0");
   if (o.has("traversal")) {
-    rep.add({.repr = name, .phase = "topo_indegree", .algorithm = "kahn", .rep = r, .time_ns = topo.init_ns,
-             .work = el.num_nodes, .mem_bytes = topo.aux_bytes});
-    rep.add({.repr = name, .phase = "topo_sort", .algorithm = "kahn", .rep = r, .time_ns = t_topo, .work = topo.work,
-             .mem_bytes = topo.aux_bytes + topo.order.capacity() * sizeof(NodeId), .cmp = topo_ok ? ok() : fail(),
+    rep.add({.repr = name,
+             .phase = "topo_indegree",
+             .algorithm = "kahn",
+             .rep = r,
+             .time_ns = topo.init_ns,
+             .work = el.num_nodes,
+             .mem_bytes = topo.aux_bytes});
+    rep.add({.repr = name,
+             .phase = "topo_sort",
+             .algorithm = "kahn",
+             .rep = r,
+             .time_ns = t_topo,
+             .work = topo.work,
+             .mem_bytes = topo.aux_bytes + topo.order.capacity() * sizeof(NodeId),
+             .cmp = topo_ok ? ok() : fail(),
              .notes = order_note});
 
     Stopwatch sw_dfs;
     TopoResult dfs = dfs_topo_sort(g);
     const auto t_dfs = sw_dfs.elapsed_ns();
     const bool dfs_ok = dfs.is_dag && is_topological_order(g, dfs.order);
-    rep.add({.repr = name, .phase = "topo_sort", .algorithm = "dfs", .rep = r, .time_ns = t_dfs, .work = dfs.work,
-             .mem_bytes = dfs.aux_bytes + dfs.order.capacity() * sizeof(NodeId), .cmp = dfs_ok ? ok() : fail()});
+    rep.add({.repr = name,
+             .phase = "topo_sort",
+             .algorithm = "dfs",
+             .rep = r,
+             .time_ns = t_dfs,
+             .work = dfs.work,
+             .mem_bytes = dfs.aux_bytes + dfs.order.capacity() * sizeof(NodeId),
+             .cmp = dfs_ok ? ok() : fail()});
 
     Stopwatch sw_bfs;
     TopoResult bfs = bfs_order(g);
     const auto t_bfs = sw_bfs.elapsed_ns();
     // BFS is measured as a traversal only; whether its visit order is a valid timing order is recorded in notes.
-    rep.add({.repr = name, .phase = "traversal", .algorithm = "bfs", .rep = r, .time_ns = t_bfs, .work = bfs.work,
+    rep.add({.repr = name,
+             .phase = "traversal",
+             .algorithm = "bfs",
+             .rep = r,
+             .time_ns = t_bfs,
+             .work = bfs.work,
              .mem_bytes = bfs.aux_bytes + bfs.order.capacity() * sizeof(NodeId),
              .cmp = bfs.order.size() == el.num_nodes ? ok() : fail(),
              .notes = std::string("bfs_order_is_topological=") + (is_topological_order(g, bfs.order) ? "1" : "0")});
@@ -404,7 +471,12 @@ void bench_repr(Context& cx, int r) {
       Stopwatch sw;
       propagate_arrival(g, dfs.order, c, at);
       const auto t = sw.elapsed_ns();
-      rep.add({.repr = name, .phase = "arrival", .algorithm = "pull_dfs_order", .rep = r, .time_ns = t, .work = m,
+      rep.add({.repr = name,
+               .phase = "arrival",
+               .algorithm = "pull_dfs_order",
+               .rep = r,
+               .time_ns = t,
+               .work = m,
                .cmp = compare_values(at, cx.ref.at, o.tol)});
     }
   }
@@ -415,27 +487,47 @@ void bench_repr(Context& cx, int r) {
     Stopwatch sw_at;
     propagate_arrival(g, topo.order, c, s.at);
     const auto t_at = sw_at.elapsed_ns();
-    rep.add({.repr = name, .phase = "arrival", .algorithm = "pull", .rep = r, .time_ns = t_at, .work = m,
+    rep.add({.repr = name,
+             .phase = "arrival",
+             .algorithm = "pull",
+             .rep = r,
+             .time_ns = t_at,
+             .work = m,
              .cmp = compare_values(s.at, cx.ref.at, o.tol)});
 
     std::vector<Delay> at_push;
     Stopwatch sw_push;
     propagate_arrival_push(g, topo.order, c, at_push);
     const auto t_push = sw_push.elapsed_ns();
-    rep.add({.repr = name, .phase = "arrival", .algorithm = "push", .rep = r, .time_ns = t_push, .work = m,
+    rep.add({.repr = name,
+             .phase = "arrival",
+             .algorithm = "push",
+             .rep = r,
+             .time_ns = t_push,
+             .work = m,
              .cmp = compare_values(at_push, cx.ref.at, o.tol)});
 
     Stopwatch sw_rt;
     propagate_required(g, topo.order, c, s.rt);
     const auto t_rt = sw_rt.elapsed_ns();
-    rep.add({.repr = name, .phase = "required", .algorithm = "pull", .rep = r, .time_ns = t_rt, .work = m,
+    rep.add({.repr = name,
+             .phase = "required",
+             .algorithm = "pull",
+             .rep = r,
+             .time_ns = t_rt,
+             .work = m,
              .cmp = compare_values(s.rt, cx.ref.rt, o.tol)});
 
     Stopwatch sw_sl;
     compute_slack(s);
     const auto t_sl = sw_sl.elapsed_ns();
-    rep.add({.repr = name, .phase = "slack", .algorithm = "rt_minus_at", .rep = r, .time_ns = t_sl,
-             .work = el.num_nodes, .cmp = compare_values(s.slack, cx.ref.slack, o.tol),
+    rep.add({.repr = name,
+             .phase = "slack",
+             .algorithm = "rt_minus_at",
+             .rep = r,
+             .time_ns = t_sl,
+             .work = el.num_nodes,
+             .cmp = compare_values(s.slack, cx.ref.slack, o.tol),
              .checksum = summarize(g, s).checksum});
   }
 
@@ -443,29 +535,45 @@ void bench_repr(Context& cx, int r) {
     Stopwatch sw_lv;
     const Levels levels = levelize(g, topo.order);
     const auto t_lv = sw_lv.elapsed_ns();
-    rep.add({.repr = name, .phase = "levelize", .algorithm = "longest_hop", .rep = r, .time_ns = t_lv,
+    rep.add({.repr = name,
+             .phase = "levelize",
+             .algorithm = "longest_hop",
+             .rep = r,
+             .time_ns = t_lv,
              .work = levels.num_levels(),
              .mem_bytes = (levels.offsets.capacity() + levels.nodes.capacity()) * sizeof(std::uint32_t)});
     for (const auto& bk : o.barriers)
-    for (int t : o.threads) {
-      const std::string alg = "level_parallel_" + bk;
-      Stopwatch sw_pool;
-      LevelPool pool(t, bk == "spin" ? BarrierKind::Spin : BarrierKind::Block);
-      const auto t_pool = sw_pool.elapsed_ns();
-      rep.add({.repr = name, .phase = "pool_start", .algorithm = alg, .threads = t, .rep = r, .time_ns = t_pool});
-      TimingState p;
-      p.resize(g.num_nodes());
-      Stopwatch sw_pat;
-      propagate_arrival_parallel(g, levels, c, p.at, pool);
-      const auto t_pat = sw_pat.elapsed_ns();
-      Stopwatch sw_prt;
-      propagate_required_parallel(g, levels, c, p.rt, pool);
-      const auto t_prt = sw_prt.elapsed_ns();
-      rep.add({.repr = name, .phase = "arrival", .algorithm = alg, .threads = t, .rep = r,
-               .time_ns = t_pat, .work = m, .cmp = compare_values(p.at, cx.ref.at, o.tol)});
-      rep.add({.repr = name, .phase = "required", .algorithm = alg, .threads = t, .rep = r,
-               .time_ns = t_prt, .work = m, .cmp = compare_values(p.rt, cx.ref.rt, o.tol)});
-    }
+      for (int t : o.threads) {
+        const std::string alg = "level_parallel_" + bk;
+        Stopwatch sw_pool;
+        LevelPool pool(t, bk == "spin" ? BarrierKind::Spin : BarrierKind::Block);
+        const auto t_pool = sw_pool.elapsed_ns();
+        rep.add({.repr = name, .phase = "pool_start", .algorithm = alg, .threads = t, .rep = r, .time_ns = t_pool});
+        TimingState p;
+        p.resize(g.num_nodes());
+        Stopwatch sw_pat;
+        propagate_arrival_parallel(g, levels, c, p.at, pool);
+        const auto t_pat = sw_pat.elapsed_ns();
+        Stopwatch sw_prt;
+        propagate_required_parallel(g, levels, c, p.rt, pool);
+        const auto t_prt = sw_prt.elapsed_ns();
+        rep.add({.repr = name,
+                 .phase = "arrival",
+                 .algorithm = alg,
+                 .threads = t,
+                 .rep = r,
+                 .time_ns = t_pat,
+                 .work = m,
+                 .cmp = compare_values(p.at, cx.ref.at, o.tol)});
+        rep.add({.repr = name,
+                 .phase = "required",
+                 .algorithm = alg,
+                 .threads = t,
+                 .rep = r,
+                 .time_ns = t_prt,
+                 .work = m,
+                 .cmp = compare_values(p.rt, cx.ref.rt, o.tol)});
+      }
   }
 
   if (o.has("structure")) {
@@ -488,8 +596,14 @@ void bench_repr(Context& cx, int r) {
       edges_after = rebuilt.num_edges();
       mem_after = rebuilt.memory_bytes();
     }
-    rep.add({.repr = name, .phase = "edge_insert", .algorithm = name == "csr" ? "rebuild" : "append", .rep = r,
-             .updated_edges = extra.size(), .time_ns = t_ins, .work = extra.size(), .mem_bytes = mem_after,
+    rep.add({.repr = name,
+             .phase = "edge_insert",
+             .algorithm = name == "csr" ? "rebuild" : "append",
+             .rep = r,
+             .updated_edges = extra.size(),
+             .time_ns = t_ins,
+             .work = extra.size(),
+             .mem_bytes = mem_after,
              .cmp = edges_after == m + extra.size() ? ok() : fail()});
   }
 }
@@ -548,8 +662,7 @@ UpdateSet make_update_set(const EdgeList& el, const Options& o, const TimingStat
                       [&](EdgeId a, EdgeId b) { return key[a] < key[b]; });
     pick.assign(ids.begin(), ids.begin() + static_cast<std::ptrdiff_t>(k));
   }
-  for (EdgeId e : pick)
-    u.changes.push_back({e, o.gen.delay_min + (o.gen.delay_max - o.gen.delay_min) * rng.unit()});
+  for (EdgeId e : pick) u.changes.push_back({e, o.gen.delay_min + (o.gen.delay_max - o.gen.delay_min) * rng.unit()});
   return u;
 }
 
@@ -583,25 +696,43 @@ void bench_incremental(const EdgeList& el, const Options& o, const TimingConstra
           CompareResult cmp = compare_timing(inc, mref, o.tol);
 
           char notes[200];
-          std::snprintf(notes, sizeof notes,
-                        "affected_fwd=%llu;affected_bwd=%llu;at_changed=%llu;rt_changed=%llu;evals_fwd=%llu;evals_bwd=%llu",
-                        (unsigned long long)region.fwd, (unsigned long long)region.bwd,
-                        (unsigned long long)st.at_changed, (unsigned long long)st.rt_changed,
-                        (unsigned long long)st.forward_evals, (unsigned long long)st.backward_evals);
-          rep.add({.repr = "csr", .phase = "incremental", .algorithm = o.inc_modes[mi], .rep = r,
-                   .update_ratio = ratio, .update_dist = dist, .update_seed = u.seed,
-                   .updated_edges = u.changes.size(), .affected_nodes = region.either,
-                   .changed_nodes = st.changed_nodes, .time_ns = t_inc,
-                   .work = st.forward_evals + st.backward_evals, .cmp = cmp, .notes = notes});
+          std::snprintf(
+              notes, sizeof notes,
+              "affected_fwd=%llu;affected_bwd=%llu;at_changed=%llu;rt_changed=%llu;evals_fwd=%llu;evals_bwd=%llu",
+              (unsigned long long)region.fwd, (unsigned long long)region.bwd, (unsigned long long)st.at_changed,
+              (unsigned long long)st.rt_changed, (unsigned long long)st.forward_evals,
+              (unsigned long long)st.backward_evals);
+          rep.add({.repr = "csr",
+                   .phase = "incremental",
+                   .algorithm = o.inc_modes[mi],
+                   .rep = r,
+                   .update_ratio = ratio,
+                   .update_dist = dist,
+                   .update_seed = u.seed,
+                   .updated_edges = u.changes.size(),
+                   .affected_nodes = region.either,
+                   .changed_nodes = st.changed_nodes,
+                   .time_ns = t_inc,
+                   .work = st.forward_evals + st.backward_evals,
+                   .cmp = cmp,
+                   .notes = notes});
 
           if (mi == 0) {
             // Full Recompute baseline on the same modified delays (cached topological order).
             Stopwatch swf;
             timer.full_recompute();
             const auto t_full = swf.elapsed_ns();
-            rep.add({.repr = "csr", .phase = "full_recompute", .algorithm = "pull", .rep = r, .update_ratio = ratio,
-                     .update_dist = dist, .update_seed = u.seed, .updated_edges = u.changes.size(),
-                     .affected_nodes = el.num_nodes, .time_ns = t_full, .work = 2 * el.num_edges(),
+            rep.add({.repr = "csr",
+                     .phase = "full_recompute",
+                     .algorithm = "pull",
+                     .rep = r,
+                     .update_ratio = ratio,
+                     .update_dist = dist,
+                     .update_seed = u.seed,
+                     .updated_edges = u.changes.size(),
+                     .affected_nodes = el.num_nodes,
+                     .time_ns = t_full,
+                     .work = 2 * el.num_edges(),
                      .cmp = compare_timing(timer.state(), mref, o.tol)});
           }
         }
@@ -644,8 +775,12 @@ int main(int argc, char** argv) {
       }
     }
     Report rep(o, info);
-    rep.add({.repr = "edgelist", .phase = "generate", .algorithm = o.input.empty() ? o.gen.kind : "file",
-             .time_ns = t_gen, .work = el.num_edges(), .mem_bytes = el.memory_bytes()});
+    rep.add({.repr = "edgelist",
+             .phase = "generate",
+             .algorithm = o.input.empty() ? o.gen.kind : "file",
+             .time_ns = t_gen,
+             .work = el.num_edges(),
+             .mem_bytes = el.memory_bytes()});
 
     // 2. constraints and reference timing
     TimingConstraints c;
@@ -662,14 +797,21 @@ int main(int argc, char** argv) {
     for (Delay a : ref->at) max_at = std::max(max_at, a);
     c.default_required = o.period >= 0 ? o.period : max_at;
     ref = oracle::reference_engine(el, c);
-    rep.add({.repr = "edgelist", .phase = "reference", .algorithm = "reference_engine", .time_ns = sw_ref.elapsed_ns(),
+    rep.add({.repr = "edgelist",
+             .phase = "reference",
+             .algorithm = "reference_engine",
+             .time_ns = sw_ref.elapsed_ns(),
              .work = el.num_edges()});
     if (el.num_edges() <= o.oracle_max_edges) {
       Stopwatch sw;
       auto rel = oracle::relaxation_oracle(el, c);
       const auto t = sw.elapsed_ns();
-      rep.add({.repr = "edgelist", .phase = "oracle_check", .algorithm = "relaxation", .time_ns = t,
-               .work = el.num_edges(), .cmp = rel ? compare_timing(*ref, *rel, o.tol) : fail()});
+      rep.add({.repr = "edgelist",
+               .phase = "oracle_check",
+               .algorithm = "relaxation",
+               .time_ns = t,
+               .work = el.num_edges(),
+               .cmp = rel ? compare_timing(*ref, *rel, o.tol) : fail()});
     }
     if (!o.graph_stats_out.empty()) {
       std::ofstream f(o.graph_stats_out, std::ios::app);
@@ -685,8 +827,10 @@ int main(int argc, char** argv) {
       if (!per_repr) break;
       for (int it = 0; it < o.warmup + o.repetitions; ++it) {
         rep.measured = it >= o.warmup;
-        if (name == "list") bench_repr<AdjacencyList>(cx, it - o.warmup);
-        else bench_repr<CsrGraph>(cx, it - o.warmup);
+        if (name == "list")
+          bench_repr<AdjacencyList>(cx, it - o.warmup);
+        else
+          bench_repr<CsrGraph>(cx, it - o.warmup);
       }
       rep.measured = true;
     }

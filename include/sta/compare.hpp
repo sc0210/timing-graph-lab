@@ -53,7 +53,8 @@ inline CompareResult compare_values(const std::vector<Delay>& got, const std::ve
   for (std::size_t i = 0; i < got.size(); ++i) {
     if (!std::isfinite(got[i])) ++r.non_finite;
     if (!close(got[i], ref[i], t)) ++r.mismatches;
-    if (std::isfinite(got[i]) && std::isfinite(ref[i])) r.max_abs_err = std::max(r.max_abs_err, std::fabs(got[i] - ref[i]));
+    if (std::isfinite(got[i]) && std::isfinite(ref[i]))
+      r.max_abs_err = std::max(r.max_abs_err, std::fabs(got[i] - ref[i]));
   }
   r.pass = r.mismatches == 0 && r.non_finite == 0;
   return r;
