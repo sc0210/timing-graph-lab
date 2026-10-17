@@ -7,10 +7,28 @@ are listed under **Changed**, because they break comparability with earlier resu
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-17
+
+First version that meets the plan's Definition of Done (§11):
+
+- [x] Four graph topologies can be generated (chain, layered, reconvergent, random).
+- [x] List and CSR both compute Arrival, Required and Slack.
+- [x] All required correctness tests pass (T01–T14, property, differential, regression).
+- [x] Incremental STA matches Full Recompute (both modes, every measured row).
+- [x] The parallel version passes correctness and ThreadSanitizer data-race tests.
+- [x] Every measurement is traceable to seed, parameters and Git commit.
+- [x] CSV output plus three automatically generated analysis figures (§12.1).
+- [x] The report separates measured results, hypotheses, interpretation and limitations (§12.2).
+
 ### Added
+- `docs/report.md`: pilot experiment report, one §12.2-template section per experiment.
+- `scripts/plot_results.py`: the three §12.1 figures (runtime vs size, parallel speedup,
+  incremental speedup) with `--only` to draw each from its own suite; figures in
+  `results/figures/`. CI draws figures 2 and 3 from the smoke suite.
 - `env.sh`: sourceable shell environment (PATH, `TGL_*` variables, `tgl_*` helpers).
 - Community files: license, contributing guide, code of conduct, security policy,
   issue and PR templates, CI workflow, `.clang-format`, `.editorconfig`, citation metadata.
+- Scaling suite results (Experiment A, 10K–1M nodes).
 
 ### Changed
 - Source formatted with `.clang-format`. No functional change; regression goldens are unchanged.
@@ -29,5 +47,6 @@ are listed under **Changed**, because they break comparability with earlier resu
 - `timing_graph_bench` CLI, suite runner with quality gates, analysis and plotting scripts.
 - Pilot results for the baseline, incremental, parallel and scaling suites.
 
-[Unreleased]: https://github.com/sc0210/timing-graph-lab/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sc0210/timing-graph-lab/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/sc0210/timing-graph-lab/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/sc0210/timing-graph-lab/releases/tag/v0.1.0

@@ -86,7 +86,11 @@ jobs:
         run: python scripts/run_suite.py configs/smoke.json
       - name: Analyze
         run: python scripts/analyze_results.py results/smoke_*.csv --out results/smoke_report.md && cat results/smoke_report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Plot (figures 2 and 3; figure 1 needs several graph sizes)
+        run: pip install matplotlib && python scripts/plot_results.py results/smoke_*.csv --out-dir results/smoke_figures
       - uses: actions/upload-artifact@v4
         with:
           name: smoke-results
-          path: results/smoke_*
+          path: |
+            results/smoke_*
+            results/smoke_figures/

@@ -10,6 +10,16 @@ Pilot run on 2026-10-17. Every suite passed Gates A–C (Release, ASan+UBSan and
 | parallel (Exp. D) | `parallel_20261017-153443.*` | [parallel_report.md](parallel_report.md) |
 | scaling (Exp. A1–A4) | `scaling_20261017-154952.*` | [scaling_report.md](scaling_report.md) |
 
+Figures (`figures/`, plan §12.1), each drawn from its own suite:
+
+| Figure | Source | Command |
+|---|---|---|
+| [fig1_runtime_vs_size.png](figures/fig1_runtime_vs_size.png) | scaling | `plot_results.py results/scaling_*.csv --only fig1` |
+| [fig2_parallel_speedup.png](figures/fig2_parallel_speedup.png) | parallel | `plot_results.py results/parallel_*.csv --only fig2` |
+| [fig3_incremental_speedup.png](figures/fig3_incremental_speedup.png) | incremental | `plot_results.py results/incremental_*.csv --only fig3` |
+
+The written analysis of all suites is [docs/report.md](../docs/report.md).
+
 Each suite has `*.csv` (one row per measured phase, schema in the top-level README),
 `*.meta.json` (environment, config + SHA-256, gate results, failed points) and
 `*.graphs.jsonl` (per-graph fanout/fanin histograms). Regenerate a report with

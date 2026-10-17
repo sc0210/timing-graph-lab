@@ -9,7 +9,7 @@ authors:
   - alias: sc0210
 repository-code: "https://github.com/sc0210/timing-graph-lab"
 license: MIT
-version: 0.1.0
+version: 1.0.0
 date-released: "2026-10-17"
 keywords:
   - static timing analysis

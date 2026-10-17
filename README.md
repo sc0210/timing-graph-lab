@@ -35,17 +35,28 @@ min-plus propagation. Liberty, SDC, clocks, setup/hold and parasitics are out of
 
 ## Pilot findings
 
-From the first full run on a shared 4-vCPU cloud VM (details and caveats in
-[`results/`](results/README.md)). Treat these as a pilot that exercises the pipeline,
-not as definitive measurements.
+From the first full run on a shared 4-vCPU cloud VM. The full write-up, which separates
+measurements, hypotheses, interpretation and limitations for each experiment, is
+[**docs/report.md**](docs/report.md); raw data and caveats are in [`results/`](results/README.md).
+Treat these as a pilot that exercises the pipeline, not as definitive measurements.
 
 | Question | Pilot answer |
 |---|---|
 | RQ1 List vs CSR | CSR uses 1.7–1.9× less memory, builds 1.2× faster and propagates 1.06–1.24× faster at 1M nodes ([scaling](results/scaling_report.md)) |
 | RQ3 BFS vs topological order | BFS visit order is not a valid timing order on reconvergent and random DAGs; propagation uses Kahn or DFS orders ([baseline](results/baseline_report.md)) |
 | RQ4 Incremental vs full | Early-stop wins 36–78× for 0.01 % non-critical edits, breaks even around 0.1 %, and loses from 1 % upward; edits on critical edges lose even at 0.01 % ([incremental](results/incremental_report.md)) |
-| RQ5 Threads | Up to 2.6× at 4 threads on 1M-node graphs with the spin barrier. The chain (one node per level) is 4–50× slower than serial, depending on barrier and thread count. `std::barrier` costs ≈ 40–90 µs per level at 4 threads here ([parallel](results/parallel_report.md)) |
+| RQ5 Threads | Up to 2.6× at 4 threads on 1M-node graphs with the spin barrier. The chain (one node per level) is slower than serial at every thread count: 4× at 1 thread, 23–63× with the spin barrier, up to ≈ 3,000× with the blocking one. `std::barrier` costs ≈ 40–90 µs per level at 4 threads here ([parallel](results/parallel_report.md)) |
 | RQ6 Correctness cost | 0 of 20,132 measured rows failed verification; all variants are bit-identical to the reference ([validation](docs/validation_report.md)) |
+
+<p align="center">
+  <img src="results/figures/fig1_runtime_vs_size.png" alt="Runtime vs graph size, Adjacency List vs CSR" width="100%"><br>
+  <img src="results/figures/fig3_incremental_speedup.png" alt="Incremental update vs full recompute" width="49%">
+  <img src="results/figures/fig2_parallel_speedup.png" alt="Level-parallel speedup by topology" width="49%">
+</p>
+
+Regenerate the figures with `scripts/plot_results.py` (needs `pip install matplotlib`).
+Each figure is drawn from its own suite: `scaling` for Fig. 1, `parallel` for Fig. 2 and
+`incremental` for Fig. 3.
 
 ## Quick start
 
@@ -113,12 +124,13 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `tests/{unit,property,differential,regression}` | L1–L4 test levels (§7.1); T01–T14 in `tests/unit` (§7.2) |
 | `scripts/run_suite.py` | SOP runner: gates → matrix of runs → CSV + `.meta.json` + `.graphs.jsonl` (§10) |
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |
-| `scripts/plot_results.py` | Scaling / incremental / speedup plots (needs matplotlib) |
+| `scripts/plot_results.py` | The three §12.1 figures: runtime vs size, parallel speedup, incremental speedup (needs matplotlib) |
 | `env.sh` | Sourceable shell environment: PATH, variables, `tgl_*` helpers |
 | `.github/` | CI workflow (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite), issue and PR templates |
 | `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `incremental` (Exp. C) |
 | `docs/experiment_protocol.md` | What exactly each phase times, statistics, environment recording |
 | `docs/validation_report.md` | Test levels, gate results, bugs found, verification evidence |
+| `docs/report.md` | Pilot experiment report in the §12.2 template, one section per experiment |
 
 ## Experiments → configs
 
