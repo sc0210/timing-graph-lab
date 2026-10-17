@@ -1,0 +1,34 @@
+name: Feature or experiment proposal
+description: A new representation, algorithm, generator, experiment or analysis
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Research question or motivation
+      description: What do you want to learn or make possible? Link to the plan's RQ (RQ1-RQ6) if it relates to one.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What would be added or changed (phases, CLI options, CSV columns, configs)?
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: How will correctness be validated?
+      description: Which oracle or reference will the new variant be compared against? New tests?
+    validations:
+      required: true
+  - type: textarea
+    id: fairness
+    attributes:
+      label: Fair-comparison concerns
+      description: Extra preprocessing, memory or setup cost that must be timed or reported separately (plan §4.4).
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

@@ -1,0 +1,59 @@
+name: Bug report
+description: A wrong timing result, crash, sanitizer report or failing test
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! A reproducible command makes a fix much faster.
+        Security issues (e.g. memory corruption from a crafted `--input` file) go to
+        [private vulnerability reporting](https://github.com/sc0210/timing-graph-lab/security/advisories/new) instead.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - Wrong timing result (AT / RT / slack differs from the reference)
+        - Crash or sanitizer report
+        - Failing or flaky test
+        - Script / analysis problem
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Output of `git rev-parse --short HEAD`
+      placeholder: 65fc99c
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Command to reproduce
+      description: The exact `timing_graph_bench` / `ctest` / script command, including seed and topology.
+      render: shell
+      placeholder: ./build/timing_graph_bench --topology random --nodes 1000 --seed 7 --algorithm incremental
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Paste the error, sanitizer output, or the failing CSV rows (`correctness_pass=false`).
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, compiler and version, CMake build type and options (e.g. `TGL_SANITIZER`), CPU.
+      placeholder: Ubuntu 24.04, GCC 13.3, Release, Intel Xeon
+    validations:
+      required: true

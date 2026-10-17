@@ -1,5 +1,10 @@
 # Timing Graph Lab — Mini STA Benchmark Lab
 
+[![CI](https://github.com/sc0210/timing-graph-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/sc0210/timing-graph-lab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-informational)
+![Platform](https://img.shields.io/badge/platform-Linux%20x86--64-lightgrey)
+
 A reproducible, measurable, verifiable lab for studying how timing-graph data
 structures, graph traversal, static timing propagation and incremental STA affect
 performance. This repository implements the experiment plan *EDA Timing Graph 實驗環境建置與驗證計劃書 v1.0*
@@ -7,6 +12,40 @@ performance. This repository implements the experiment plan *EDA Timing Graph �
 
 Scope (phase 1, §1.1): a DAG with fixed non-negative edge delays and max-plus /
 min-plus propagation. Liberty, SDC, clocks, setup/hold and parasitics are out of scope.
+
+**Contents:** [Highlights](#highlights) · [Pilot findings](#pilot-findings) ·
+[Quick start](#quick-start) · [Layout](#layout-23) · [Experiments](#experiments--configs) ·
+[Output](#output-91) · [Design decisions](#design-decisions-and-deviations-from-the-plan) ·
+[Contributing](#contributing) · [Citation](#citation) · [License](#license)
+
+## Highlights
+
+- **Correctness first.** Every measured row is re-verified against an independent O(V+E)
+  reference engine. That engine is itself checked bit-for-bit against path enumeration and
+  a relaxation oracle on 640 small cases. Benchmarks run only after the unit, property,
+  differential, regression, ASan/UBSan and TSan gates pass.
+- **Attributable timing.** Graph build, indegree init, topological sort, arrival,
+  required, slack, levelization, thread start-up, incremental update and full recompute
+  are timed as separate phases.
+- **Reproducible.** Deterministic generators (own RNG), fixed seeds, input content hashes,
+  per-run environment metadata and config SHA-256, all in CSV and JSON.
+- **Covers the plan's experiment matrix.** Adjacency List vs CSR, four topologies,
+  BFS/DFS/Kahn, incremental (conservative vs early-stop, three update distributions) and
+  level-parallel propagation (spin vs blocking barrier).
+
+## Pilot findings
+
+From the first full run on a shared 4-vCPU cloud VM (details and caveats in
+[`results/`](results/README.md)). Treat these as a pilot that exercises the pipeline,
+not as definitive measurements.
+
+| Question | Pilot answer |
+|---|---|
+| RQ1 List vs CSR | CSR uses 1.7–1.9× less memory, builds 1.2× faster and propagates 1.06–1.24× faster at 1M nodes ([scaling](results/scaling_report.md)) |
+| RQ3 BFS vs topological order | BFS visit order is not a valid timing order on reconvergent and random DAGs; propagation uses Kahn or DFS orders ([baseline](results/baseline_report.md)) |
+| RQ4 Incremental vs full | Early-stop wins 36–78× for 0.01 % non-critical edits, breaks even around 0.1 %, and loses from 1 % upward; edits on critical edges lose even at 0.01 % ([incremental](results/incremental_report.md)) |
+| RQ5 Threads | Up to 2.6× at 4 threads on 1M-node graphs with the spin barrier. The chain (one node per level) is 4–50× slower than serial, depending on barrier and thread count. `std::barrier` costs ≈ 40–90 µs per level at 4 threads here ([parallel](results/parallel_report.md)) |
+| RQ6 Correctness cost | 0 of 20,132 measured rows failed verification; all variants are bit-identical to the reference ([validation](docs/validation_report.md)) |
 
 ## Quick start
 
@@ -76,6 +115,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |
 | `scripts/plot_results.py` | Scaling / incremental / speedup plots (needs matplotlib) |
 | `env.sh` | Sourceable shell environment: PATH, variables, `tgl_*` helpers |
+| `.github/` | CI workflow (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite), issue and PR templates |
 | `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `incremental` (Exp. C) |
 | `docs/experiment_protocol.md` | What exactly each phase times, statistics, environment recording |
 | `docs/validation_report.md` | Test levels, gate results, bugs found, verification evidence |
@@ -128,3 +168,22 @@ governor, load, config SHA-256, gate results, failed points with reasons) and a
 - **Hardware counters.** `run_suite.py --perf` wraps runs with `perf stat` when it is
   installed. It was not available in the development container, so no cache-locality
   claims are made from these results (§9.3).
+
+## Contributing
+
+Contributions are welcome: bug reports, results from other machines, new experiments and
+documentation fixes. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. It explains the
+correctness and fair-comparison rules every change must follow. Use the
+[issue templates](https://github.com/sc0210/timing-graph-lab/issues/new/choose) for bugs,
+proposals and benchmark results. This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+Report security issues privately as described in [SECURITY.md](SECURITY.md). Changes are
+tracked in [CHANGELOG.md](CHANGELOG.md).
+
+## Citation
+
+If you use this lab or its results, please cite it using the metadata in
+[CITATION.cff](CITATION.cff) (GitHub's *Cite this repository* button).
+
+## License
+
+[MIT](LICENSE) © 2026 sc0210 and Timing Graph Lab contributors.

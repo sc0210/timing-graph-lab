@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this lab or its results, please cite it as below."
+title: "Timing Graph Lab: a Mini STA Benchmark Lab"
+abstract: >-
+  A reproducible, verifiable benchmark lab for timing-graph data structures, graph
+  traversal, static timing propagation and incremental STA on synthetic DAGs.
+type: software
+authors:
+  - alias: sc0210
+repository-code: "https://github.com/sc0210/timing-graph-lab"
+license: MIT
+version: 0.1.0
+date-released: "2026-10-17"
+keywords:
+  - static timing analysis
+  - EDA
+  - timing graph
+  - incremental STA
+  - CSR
+  - benchmark

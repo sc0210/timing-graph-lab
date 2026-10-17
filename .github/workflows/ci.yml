@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { compiler: gcc, cxx: g++-13, build_type: Release }
+          - { compiler: clang, cxx: clang++-18, build_type: Release }
+          - { compiler: gcc, cxx: g++-13, build_type: Debug }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  sanitizers:
+    name: sanitizer / ${{ matrix.sanitizer }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { sanitizer: address, build_type: Debug }
+          - { sanitizer: thread, build_type: RelWithDebInfo }
+    steps:
+      - uses: actions/checkout@v4
+      # TSan needs fewer mmap randomization bits than the runner's kernel default.
+      - name: Reduce ASLR entropy for TSan
+        if: matrix.sanitizer == 'thread'
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=g++-13 -DTGL_SANITIZER=${{ matrix.sanitizer }}
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        env:
+          ASAN_OPTIONS: halt_on_error=1:detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+          TSAN_OPTIONS: halt_on_error=1:second_deadlock_stack=1
+        run: ctest --test-dir build --output-on-failure
+
+  format:
+    name: clang-format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check formatting
+        run: clang-format-18 --dry-run --Werror $(git ls-files '*.cpp' '*.hpp')
+
+  smoke-suite:
+    name: smoke suite + analysis
+    runs-on: ubuntu-24.04
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+      - name: Check scripts compile
+        run: python -m py_compile scripts/*.py
+      - name: Shell environment
+        run: bash -c 'source env.sh && tgl_info && command -v timing_graph_bench && tgl_unload'
+      - name: Run smoke suite (gates + benchmark)
+        run: python scripts/run_suite.py configs/smoke.json
+      - name: Analyze
+        run: python scripts/analyze_results.py results/smoke_*.csv --out results/smoke_report.md && cat results/smoke_report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-results
+          path: results/smoke_*

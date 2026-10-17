@@ -1,0 +1,50 @@
+name: Benchmark result
+description: Share results from your machine
+labels: ["benchmark-data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Results from other CPUs, compilers and core counts help answer the research questions.
+        Please run from a clean checkout. Results tagged `-dirty` cannot be reproduced.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+    validations:
+      required: true
+  - type: input
+    id: suite
+    attributes:
+      label: Suite / config
+      placeholder: configs/parallel.json
+    validations:
+      required: true
+  - type: textarea
+    id: machine
+    attributes:
+      label: Machine
+      description: CPU model, physical cores / threads, RAM, OS, compiler, bare metal or VM, frequency governor, other load.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: Paste the output of `scripts/analyze_results.py results/<suite>_*.csv`.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: meta
+    attributes:
+      label: .meta.json
+      description: Paste or attach the suite's `.meta.json` (environment, gates, failed points).
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Observations
+      description: Anything surprising, noisy or different from the published pilot results.
