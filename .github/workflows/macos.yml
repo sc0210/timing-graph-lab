@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # A python whose pip may install user packages (Homebrew's python is externally managed).
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Toolchain check (as found on the runner)
