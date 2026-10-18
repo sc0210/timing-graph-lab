@@ -31,7 +31,7 @@ jobs:
           - { os: macos-14, tbb: "ON" }   # oneTBB from the submodule, initialized by check_env.sh --yes
           - { os: macos-15, tbb: "OFF" }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # A python whose pip may install user packages (Homebrew's python is externally managed).
       - uses: actions/setup-python@v7
         with:
@@ -81,7 +81,7 @@ jobs:
     name: macos-15 / ASan+UBSan
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain check
         run: scripts/check_env.sh --check
       - name: Install oneTBB
