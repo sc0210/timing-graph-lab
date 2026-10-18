@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install OpenSTA build dependencies
-        run: sudo apt-get update && sudo apt-get install -y tcl-dev swig bison flex libeigen3-dev zlib1g-dev autoconf automake libtool
+        run: sudo apt-get update && sudo apt-get install -y tcl-dev swig bison flex libfl-dev libeigen3-dev zlib1g-dev autoconf automake libtool
       - name: Cache OpenSTA
         id: cache
         uses: actions/cache@v4

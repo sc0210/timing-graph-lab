@@ -78,7 +78,7 @@ clocks are deliberately neutralized.
 ## Running it
 
 ```bash
-# 1. Build OpenSTA (needs Tcl, SWIG, Bison, Flex, Eigen, zlib; CUDD built from source)
+# 1. Build OpenSTA (needs Tcl, SWIG, Bison, Flex with FlexLexer.h (libfl-dev), Eigen, zlib; CUDD from source)
 git clone https://github.com/ivmai/cudd.git && (cd cudd && git checkout f54f533 && autoreconf -fi \
   && ./configure --prefix=$PWD/install && make -j && make install)
 git clone https://github.com/The-OpenROAD-Project/OpenSTA.git && (cd OpenSTA && git checkout 0f2529d \
