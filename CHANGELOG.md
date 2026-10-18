@@ -21,6 +21,20 @@ are listed under **Changed**, because they break comparability with earlier resu
 - `parse_edge_list()`: in-memory edge-list parser used by `read_edge_list`, and
   `parse_double()`, a portable replacement for floating-point `std::from_chars`, which
   libc++ (Apple Clang, LLVM < 20) does not provide.
+- ISCAS `.bench` netlist import (`include/graph/bench_netlist.hpp`): one node per signal,
+  primary inputs and flip-flop outputs as launch points, capture nodes for primary outputs
+  and flip-flop inputs, unit / per-gate-type / per-fanout delay models; ISCAS-85 c17 and a
+  small sequential example in `benchmarks/iscas/` with hand-computed golden timing
+  (`tests/netlist`).
+- `timing_graph_sta`: full STA on a `.bench` netlist or an edge-list file, with a per-node
+  AT / RT / slack CSV and edge-list / name export.
+- OpenSTA equivalence harness (`scripts/opensta/`, `docs/opensta.md`): writes a
+  reduced-semantics Liberty / Verilog / SDF / SDC netlist, runs OpenSTA as an external tool,
+  and checks every node in two stages (engine vs. an independent double model; OpenSTA vs. the
+  same model in OpenSTA's float32 arithmetic), with a perturbation self-check. Matches on c17,
+  a sequential circuit and generated graphs up to 20K nodes. New CI workflow
+  `.github/workflows/opensta.yml` (pinned OpenSTA and CUDD, cached build).
+- `fuzz_bench_parser` libFuzzer target with a `.bench` dictionary and corpus.
 - Optional oneTBB engines (`include/sta/tbb_parallel.hpp`), built when CMake finds TBB
   (`-DTGL_TBB=AUTO|ON|BUNDLED|OFF`, default `AUTO`):
   `--barrier tbb` (`level_parallel_tbb`, one `parallel_for` per level) and

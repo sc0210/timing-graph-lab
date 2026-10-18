@@ -1,0 +1,10 @@
+# Smal = s.
+INPUT(a)
+INPUT(b)
+OUTPUT(n2)
+q1 = DFF(n3)
+q2 = NAND(y)
+In1 = AND(a, q1)
+n2 = NOR(q2, b)
+n3 = NOT(n2)
+y = XOR(n2, q2)

@@ -1,0 +1,59 @@
+name: OpenSTA equivalence
+
+# Cross-checks timing_graph_sta against OpenSTA (GPL-3.0, built here as an external tool and
+# never linked into this repository) on a reduced-semantics netlist: see
+# scripts/opensta/compare_opensta.py and docs/opensta.md.
+on:
+  pull_request:
+    paths:
+      - "include/**"
+      - "src/**"
+      - "benchmarks/**"
+      - "scripts/opensta/**"
+      - ".github/workflows/opensta.yml"
+  schedule:
+    - cron: "17 4 * * 1"  # weekly, Monday
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Versions validated in docs/opensta.md; bump deliberately and re-run the matrix.
+  OPENSTA_COMMIT: 0f2529d18218b87aa0e82de444395a830d5058a1
+  CUDD_REPO: https://github.com/ivmai/cudd.git
+  CUDD_COMMIT: f54f533303640afd5dbe47a05ebeabb3066f2a25
+
+jobs:
+  opensta:
+    name: OpenSTA equivalence matrix
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OpenSTA build dependencies
+        run: sudo apt-get update && sudo apt-get install -y tcl-dev swig bison flex libeigen3-dev zlib1g-dev autoconf automake libtool
+      - name: Cache OpenSTA
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/opensta
+          key: opensta-${{ env.OPENSTA_COMMIT }}-cudd-${{ env.CUDD_COMMIT }}-ubuntu-24.04
+      - name: Build CUDD and OpenSTA
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          mkdir -p ~/opensta && cd ~/opensta
+          git init -q cudd-src && git -C cudd-src fetch -q --depth 1 "$CUDD_REPO" "$CUDD_COMMIT" && git -C cudd-src checkout -q FETCH_HEAD
+          (cd cudd-src && autoreconf -fi && ./configure --prefix="$HOME/opensta/cudd" && make -j"$(nproc)" && make install)
+          git init -q sta-src && git -C sta-src fetch -q --depth 1 https://github.com/The-OpenROAD-Project/OpenSTA.git "$OPENSTA_COMMIT" && git -C sta-src checkout -q FETCH_HEAD
+          cmake -S sta-src -B sta-src/build -DCMAKE_BUILD_TYPE=Release -DCUDD_DIR="$HOME/opensta/cudd" -DBUILD_TESTS=OFF -DUSE_TCL_READLINE=OFF
+          cmake --build sta-src/build -j"$(nproc)"
+          cp sta-src/build/sta ~/opensta/sta
+          rm -rf cudd-src sta-src
+      - name: Build timing_graph_sta
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTGL_TBB=OFF && cmake --build build -j --target timing_graph_sta timing_graph_bench
+      - name: Run the equivalence matrix
+        run: scripts/opensta/run_checks.sh ~/opensta/sta build | tee opensta.log
+      - name: Summary
+        if: always()
+        run: grep -E "MATCH|MISMATCH|OpenSTA equivalence" opensta.log | sed 's#^.*/##' >> "$GITHUB_STEP_SUMMARY" || true

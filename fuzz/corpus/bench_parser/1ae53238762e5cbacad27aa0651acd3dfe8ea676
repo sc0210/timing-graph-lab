@@ -1,0 +1,13 @@
+# IS 3)
+11 = NAND(3, 6)
+16 = NAND(1, 11)
+19 = NAND(11, 7)
+22 = NAND(10, 16)
+23 = NAND(16, 19)
+# Smallure nodes.
+INPq1 = DFF(n3)
+OUTPUT(n2)
+q1 = DFF(n3)
+q2 = DFF(y)
+n1 = AND(a, q1)
+n2OUTP(n2, q2)

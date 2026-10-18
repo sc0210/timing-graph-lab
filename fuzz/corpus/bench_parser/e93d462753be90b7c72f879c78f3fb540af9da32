@@ -1,0 +1,5 @@
+#q
+y = XOR(.1, q1)
+1 = AND(a, q1)
+n22 = NOR(q1)
+n3 = NOR(.2, q1)

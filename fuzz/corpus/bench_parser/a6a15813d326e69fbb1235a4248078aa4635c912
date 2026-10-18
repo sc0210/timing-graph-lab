@@ -1,0 +1,11 @@
+#QQ =F(y)
+n1 = AND(a, q1)
+q1 = AND(n3)
+
+1 = AND(a, q1)
+n2 = NOR(q1, b)
+n3 =BUFF(n2)
+x = AND(a, y)
+y= NOT(x)
+OUTPUT(y)
+y = XOR(n2, q2)

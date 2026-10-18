@@ -1,0 +1,7 @@
+# Smalle (wre)
+INPUT(b)
+OUTPUT(n3)
+q1 = DFF(n3)#q1)
+n2 = NOR(q1, b)
+n3 = NOT(n2)
+yS= XOR(n2, q1)

@@ -182,6 +182,9 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `tests/stress`, `tests/engine_check.hpp` | Degenerate and extreme graphs, each checked through every engine variant against the reference |
 | `tests/trace`, `tests/traces/`, `include/sta/trace.hpp` | Incremental operation traces and their replayer (`timing_graph_trace` CLI) |
 | `fuzz/` | libFuzzer targets (edge-list reader, differential engine fuzzer) and committed corpora |
+| `include/graph/bench_netlist.hpp`, `benchmarks/iscas/` | ISCAS `.bench` netlist import (c17 and a sequential example included) |
+| `src/tools/timing_graph_sta.cpp` | `timing_graph_sta`: STA on a netlist or edge list, per-node AT/RT/slack CSV |
+| `scripts/opensta/`, `docs/opensta.md` | OpenSTA equivalence harness (OpenSTA as an external reference) |
 | `scripts/check_env.sh` | Toolchain check: required/optional tools, install commands, install prompt (`--check`, `--yes`, `--quiet`) |
 | `scripts/run_suite.py` | SOP runner: gates → matrix of runs → CSV + `.meta.json` + `.graphs.jsonl` (§10) |
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |

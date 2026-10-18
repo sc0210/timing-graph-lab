@@ -14,6 +14,8 @@ before any performance conclusion (§7).
 | L3 | `tests/stress` | 11 | Degenerate graphs through every engine: 200K-fanout and 200K-fanin stars, a 1M-level chain, isolated nodes, duplicate parallel arcs, delays spanning 1e-3 to 1e6, all-zero delays, complete DAG and bipartite graphs, per-node constraints, an incremental edit storm |
 | L3 | `tests/trace` + `tests/traces/*.trace` | 4 | Incremental operation traces (edits, updates in both modes, resets, exact expectations) replayed against the reference after every check; 60 random traces; negative tests prove the replayer reports failures |
 | L3 | `fuzz/` (`fuzz_*_replay` in CTest, libFuzzer in CI) | 2 targets | Edge-list reader on untrusted input; differential fuzzing of every engine and the incremental timer against the reference |
+| L3 | `tests/netlist` | 8 | `.bench` import: hand-computed golden AT/RT/slack for ISCAS-85 c17 and a sequential circuit, delay models, malformed netlists, combinational loops; imported graphs through every engine |
+| L3 | OpenSTA harness (`docs/opensta.md`) | 7 inputs + 2 self-checks | Every node's AT, RT and slack against OpenSTA on a reduced-semantics netlist (external, optional CI workflow) |
 | L4 | `tests/regression` | 5 | Pinned generator fingerprints and timing checksums for 16 fixed graphs; bugs found during development |
 | L5 | `bench_smoke` + `run_suite.py` | — | Benchmarks run only after L1–L4 and sanitizer builds pass; every measured row is re-verified |
 
@@ -51,6 +53,10 @@ Three oracles share no code with the engine under test (no `kahn_topo_sort`,
 per-source arrivals, random per-sink required times, both). The reference engine is
 therefore validated before it serves as the oracle for large graphs (§7.3, last paragraph).
 It also agrees with the relaxation oracle on 3000-node graphs of every topology.
+
+A fourth, external reference is OpenSTA, which the lab does not control. On a
+reduced-semantics netlist its results match the lab's on every node, up to its
+single-precision rounding. See [`opensta.md`](opensta.md).
 
 ## 3. Numerical criterion (§7.4)
 
@@ -93,6 +99,7 @@ Each mutation was applied to a scratch copy and the suites rerun:
 | Timing checksum (FNV over raw double bits) gave identical low 32 bits for all equal-size graphs with integer delays | inspecting regression goldens | `timing_checksum_mixes_all_bits` |
 | Path oracle summed each path from the source, so it differed from the DP in the last bit with real delays | exhaustive oracle test | oracle now accumulates in DP order; covered by `oracles_agree_exhaustively_on_tiny_graphs` |
 | `LevelPool::run` on a graph with no levels returned before its workers had read the job, so a worker could dereference the caller's destroyed `Levels` (ASan stack-use-after-return; segfault in Release with a reused pool). Present since v0.1.0. | `fuzz_engine`, on its first run | `level_pool_empty_graph_with_threads` (fails under ASan without the fix in 3 of 3 runs) |
+| The `.bench` importer turned a one-gate combinational loop (`q = NAND(q)`) into a self-loop edge, which `validate()` rejects. That broke the documented contract that loops become cycles detected by the topological sort. | `fuzz_bench_parser` | `parse_bench` rejects it; cases in `parser_rejects_malformed_netlists` (fail without the fix) and `fuzz/corpus/bench_parser/one_gate_loop_crash` |
 | `read_edge_list` trusted the edge count in the header and allocated it up front: a 30-byte file declaring 4 billion edges requested ≈ 64 GB | review while adding the reader fuzzer | `parse_edge_list` bounds counts by input size; seed `fuzz/corpus/edge_list_reader/forged_edge_count` |
 
 ## 6a. Fuzzing
@@ -104,8 +111,9 @@ before the first commit and for 60 s per target in every CI run:
 |---|---|---|---|
 | `fuzz_edge_list_reader` | 2,078,145 | 355 | none after the header-count fix |
 | `fuzz_engine` | 186,182 | 1,124 | the `LevelPool` bug above, found within the first second |
+| `fuzz_bench_parser` (with `fuzz/bench_parser.dict`) | 2,103,677 | 735 | a one-gate combinational loop `q = NAND(q)` produced a self-loop edge; fixed (see below) |
 
-The minimized corpora (174 and 323 inputs) are committed in `fuzz/corpus/` and replayed by the
+The minimized corpora (174, 323 and 435 inputs) are committed in `fuzz/corpus/` and replayed by the
 `fuzz_*_replay` CTest tests on every compiler, together with 3,000 pseudo-random engine inputs.
 
 ## 7. Benchmark-time verification

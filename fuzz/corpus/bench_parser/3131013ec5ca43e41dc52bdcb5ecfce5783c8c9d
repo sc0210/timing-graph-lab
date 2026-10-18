@@ -1,0 +1,17 @@
+#le (b()wDFF(PUT(y)
+OUTPUT(n3)
+#BBBBBBBBCBBBBFDs
+INPUT(a)
+INPUT(b)
+OUTPUT(y)
+OUTPUT(n3)
+#BBBBBBFBBB = DF
+q2 = DFF(y)
+n1 = AND(a, q1)
+q1 = DFF(n3)
+Ap2 = DFF(y)												
+
+1 = AND(a, q1)
+n2 = NOR(q1, b)
+n3 = NOT(n2)
+y = XOR(n2, q2)

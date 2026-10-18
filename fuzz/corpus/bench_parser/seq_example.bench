@@ -1,0 +1,13 @@
+# Small sequential circuit in ISCAS-89 style (written for this repository, not an ISCAS
+# benchmark): two flip-flops, a feedback path through DFF q1, and an output that also fans
+# out. Exercises DFF launch/capture cutting and output capture nodes.
+INPUT(a)
+INPUT(b)
+OUTPUT(y)
+OUTPUT(n2)
+q1 = DFF(n3)
+q2 = DFF(y)
+n1 = AND(a, q1)
+n2 = NOR(n1, b)
+n3 = NOT(n2)
+y = XOR(n2, q2)
