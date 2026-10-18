@@ -75,6 +75,32 @@ jobs:
           TSAN_OPTIONS: halt_on_error=1:second_deadlock_stack=1
         run: ctest --test-dir build --output-on-failure
 
+  fuzz:
+    name: fuzz (libFuzzer, 60 s per target)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the libFuzzer runtime
+        run: sudo apt-get update && sudo apt-get install -y libclang-rt-18-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=clang++-18 -DTGL_FUZZ=ON -DTGL_TBB=OFF
+      - name: Build
+        run: cmake --build build -j --target fuzz_edge_list_reader fuzz_engine
+      - name: Fuzz
+        run: |
+          mkdir -p artifacts
+          for t in edge_list_reader engine; do
+            # Fuzz a copy of the committed corpus; new inputs stay in the job, not in the repo.
+            cp -r fuzz/corpus/$t corpus_$t
+            ./build/fuzz_$t -max_total_time=60 -rss_limit_mb=2048 -artifact_prefix=artifacts/$t- corpus_$t
+          done
+      - name: Upload crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: artifacts/
+
   format:
     name: clang-format
     runs-on: ubuntu-24.04

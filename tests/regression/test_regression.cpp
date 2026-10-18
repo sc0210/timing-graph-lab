@@ -9,7 +9,9 @@
 #include "graph/csr_graph.hpp"
 #include "graph/generators.hpp"
 #include "graph/traversal.hpp"
+#include "sta/arrival.hpp"
 #include "sta/incremental.hpp"
+#include "sta/level_pool.hpp"
 #include "sta/oracle.hpp"
 #include "sta/required.hpp"
 
@@ -105,6 +107,29 @@ TEST(incremental_decrease_falls_back_to_other_path) {
   t.set_edge_delay(2, 1);  // B->D 7 -> 1: now A->C->E (5) dominates
   t.update(IncMode::EarlyStop);
   CHECK_EQ(t.state().at[4], 5.0);
+}
+
+// Bug found by fuzz_engine: on a graph with no levels, LevelPool::run returned before its
+// workers had read the job, so they could dereference a destroyed Levels object (ASan
+// stack-use-after-return, segfault in Release). Run under the ASan/TSan builds to catch it.
+TEST(level_pool_empty_graph_with_threads) {
+  for (BarrierKind kind : {BarrierKind::Spin, BarrierKind::Block}) {
+    LevelPool pool(4, kind);
+    for (int round = 0; round < 200; ++round) {
+      const Levels empty = levelize(CsrGraph(EdgeList{}), {});
+      CHECK_EQ(empty.num_levels(), 0u);
+      int calls = 0;
+      pool.run(empty, round % 2, [&](std::span<const NodeId>) { ++calls; });
+      CHECK_EQ(calls, 0);
+      // A non-empty job right after must still run correctly on the same pool.
+      const EdgeList el{3, {{0, 1, 1}, {1, 2, 2}}};
+      const CsrGraph g(el);
+      const Levels L = levelize(g, kahn_topo_sort(g).order);
+      std::vector<Delay> at;
+      propagate_arrival_parallel(g, L, TimingConstraints{}, at, pool);
+      CHECK_EQ(at[2], 3.0);
+    }
+  }
 }
 
 int main(int argc, char** argv) {

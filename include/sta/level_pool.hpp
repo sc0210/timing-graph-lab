@@ -77,9 +77,13 @@ class LevelPool {
 
   // Calls fn(slice) for all nodes, level by level (high to low if reverse).
   void run(const Levels& levels, bool reverse, const std::function<void(std::span<const NodeId>)>& fn) {
+    // With no levels there is no barrier to hold the caller until the workers have read the
+    // job, so a woken worker could still dereference `levels` after run() returned (found by
+    // fuzz_engine on an empty graph). Nothing to do, so do not wake the workers at all.
+    if (levels.num_levels() == 0) return;
     levels_ = &levels;
     reverse_ = reverse;
-    fn_ = &fn;
+    fn_ = fn;            // by value: the caller's callable is often a temporary
     if (n_ > 1) wait();  // publish the job
     work(0);
   }
@@ -94,10 +98,12 @@ class LevelPool {
   }
 
   void work(int id) {
-    // Copy the job: run() may overwrite these fields as soon as the last barrier opens.
+    // Read the job once. The caller stays in run() until the first level's barrier, so the
+    // referenced Levels and fn are alive while used; after the last barrier only locals are
+    // touched, because run() may then return and publish the next job.
     const Levels& L = *levels_;
     const bool reverse = reverse_;
-    const auto& fn = *fn_;
+    const auto& fn = fn_;
     const std::size_t nl = L.num_levels();
     for (std::size_t i = 0; i < nl; ++i) {
       auto lv = L.level(reverse ? nl - 1 - i : i);
@@ -124,7 +130,7 @@ class LevelPool {
   std::vector<std::thread> workers_;
   const Levels* levels_ = nullptr;
   bool reverse_ = false;
-  const std::function<void(std::span<const NodeId>)>* fn_ = nullptr;
+  std::function<void(std::span<const NodeId>)> fn_;
   bool stop_ = false;
 };
 

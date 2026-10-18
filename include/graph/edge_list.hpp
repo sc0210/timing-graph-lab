@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace tgl {
@@ -50,5 +51,11 @@ std::uint64_t fingerprint(const EdgeList& el);
 // round-trip exact delays (%.17g), for saving benchmark inputs (plan §10 step 2).
 void write_edge_list(const EdgeList& el, const std::string& path);
 EdgeList read_edge_list(const std::string& path);
+
+// Parses the same format from memory. Untrusted input is safe: counts are bounded by
+// max_nodes and by the input length (each edge needs at least 6 bytes), and anything
+// after the declared edges other than whitespace is rejected. Throws std::runtime_error.
+// Structural checks (ids in range, delays) are left to validate().
+EdgeList parse_edge_list(std::string_view text, std::string_view name = "<memory>", NodeId max_nodes = NodeId{1} << 28);
 
 }  // namespace tgl

@@ -179,6 +179,9 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `include/sta/compare.hpp` | Tolerance comparison ε_abs + ε_rel·max(\|x\|,\|y\|), NaN/∞ checks (§7.4) |
 | `src/benchmark/timing_graph_bench.cpp` | Experiment driver / CLI (§10.1), CSV writer (§9.1) |
 | `tests/{unit,property,differential,regression}` | L1–L4 test levels (§7.1); T01–T14 in `tests/unit` (§7.2) |
+| `tests/stress`, `tests/engine_check.hpp` | Degenerate and extreme graphs, each checked through every engine variant against the reference |
+| `tests/trace`, `tests/traces/`, `include/sta/trace.hpp` | Incremental operation traces and their replayer (`timing_graph_trace` CLI) |
+| `fuzz/` | libFuzzer targets (edge-list reader, differential engine fuzzer) and committed corpora |
 | `scripts/check_env.sh` | Toolchain check: required/optional tools, install commands, install prompt (`--check`, `--yes`, `--quiet`) |
 | `scripts/run_suite.py` | SOP runner: gates → matrix of runs → CSV + `.meta.json` + `.graphs.jsonl` (§10) |
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |

@@ -1,8 +1,10 @@
 #include "graph/edge_list.hpp"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -52,19 +54,71 @@ void write_edge_list(const EdgeList& el, const std::string& path) {
 }
 
 EdgeList read_edge_list(const std::string& path) {
-  std::unique_ptr<FILE, int (*)(FILE*)> f(std::fopen(path.c_str(), "r"), &std::fclose);
+  std::ifstream f(path, std::ios::binary);
   if (!f) throw std::runtime_error("cannot read " + path);
-  char magic[32] = {};
-  int version = 0;
+  std::ostringstream buf;
+  buf << f.rdbuf();
+  return parse_edge_list(buf.str(), path);
+}
+
+namespace {
+
+// Whitespace-separated token scanner over a string_view.
+class Tokens {
+ public:
+  Tokens(std::string_view text, std::string_view name) : s_(text), name_(name) {}
+
+  std::string_view next(const char* what) {
+    skip();
+    if (pos_ >= s_.size()) fail(std::string("unexpected end of input, expected ") + what);
+    const std::size_t b = pos_;
+    while (pos_ < s_.size() && !space(s_[pos_])) ++pos_;
+    return s_.substr(b, pos_ - b);
+  }
+  template <class T>
+  T number(const char* what) {
+    const std::string_view t = next(what);
+    T v{};
+    const auto [p, ec] = std::from_chars(t.data(), t.data() + t.size(), v);
+    if (ec != std::errc() || p != t.data() + t.size())
+      fail(std::string("invalid ") + what + " '" + std::string(t) + "'");
+    return v;
+  }
+  bool at_end() {
+    skip();
+    return pos_ >= s_.size();
+  }
+  std::size_t remaining() const { return s_.size() - pos_; }
+  [[noreturn]] void fail(const std::string& msg) const { throw std::runtime_error(std::string(name_) + ": " + msg); }
+
+ private:
+  static bool space(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
+  void skip() {
+    while (pos_ < s_.size() && space(s_[pos_])) ++pos_;
+  }
+  std::string_view s_, name_;
+  std::size_t pos_ = 0;
+};
+
+}  // namespace
+
+EdgeList parse_edge_list(std::string_view text, std::string_view name, NodeId max_nodes) {
+  Tokens t(text, name);
+  if (t.next("magic") != "tgl-edgelist" || t.number<int>("version") != 1) t.fail("not a tgl-edgelist v1 file");
   EdgeList el;
-  std::size_t m = 0;
-  if (std::fscanf(f.get(), "%31s %d %u %zu", magic, &version, &el.num_nodes, &m) != 4 ||
-      std::string(magic) != "tgl-edgelist" || version != 1)
-    throw std::runtime_error(path + ": not a tgl-edgelist v1 file");
+  el.num_nodes = t.number<NodeId>("node count");
+  const auto m = t.number<std::uint64_t>("edge count");
+  if (el.num_nodes > max_nodes) t.fail("node count " + std::to_string(el.num_nodes) + " exceeds the limit");
+  // Every edge line is at least "0 0 0" plus a separator: 6 bytes. This bounds the
+  // allocation by the input size, so a forged header cannot request gigabytes.
+  if (m > t.remaining() / 6 + 1) t.fail("edge count " + std::to_string(m) + " exceeds what the input can hold");
   el.edges.resize(m);
-  for (Edge& e : el.edges)
-    if (std::fscanf(f.get(), "%u %u %lf", &e.src, &e.dst, &e.delay) != 3)
-      throw std::runtime_error(path + ": truncated edge list");
+  for (Edge& e : el.edges) {
+    e.src = t.number<NodeId>("edge source");
+    e.dst = t.number<NodeId>("edge destination");
+    e.delay = t.number<double>("edge delay");
+  }
+  if (!t.at_end()) t.fail("unexpected content after the declared edges");
   return el;
 }
 

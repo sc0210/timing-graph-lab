@@ -53,6 +53,20 @@ TGL_BUILD_DIR=build-tsan source env.sh && tgl_build RelWithDebInfo && tgl_test
    incremental update that is slower than full recompute, a parallel version slower than
    serial) are results. Do not tune configurations to hide them.
 
+## Testbenches beyond unit tests
+
+- **Stress cases** go in `tests/stress`. Build the graph, then call `expect_all_engines()`,
+  which runs every engine variant (`tests/engine_check.hpp`) against the reference. A new
+  engine variant must be added to `check_all_engines()`, so every testbench covers it at once.
+- **Incremental traces** (`tests/traces/*.trace`, format in `include/sta/trace.hpp`) pin down
+  ordering-dependent incremental behavior. Replay one with `timing_graph_trace FILE`. Every
+  `.trace` file in that directory is run by CTest.
+- **Fuzzing**: `cmake -S . -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DTGL_FUZZ=ON -DTGL_TBB=OFF`,
+  then `build-fuzz/fuzz_engine -max_total_time=300 fuzz/corpus/engine`. A crash leaves a
+  `crash-*` file: add it to `fuzz/corpus/<target>/`, write a focused regression test, and fix
+  the bug in the same PR. To keep the committed corpus small, merge new inputs with
+  `-merge=1 fuzz/corpus/<target> <new-dir>` rather than copying them.
+
 ## Code style
 
 - C++20, formatted with the repository's `.clang-format` (Google style, 120 columns).
@@ -65,7 +79,7 @@ TGL_BUILD_DIR=build-tsan source env.sh && tgl_build RelWithDebInfo && tgl_test
 ## Pull requests
 
 1. Branch from `main`, keep the PR focused on one change, and fill in the PR template.
-2. CI must pass: GCC + Clang builds and tests, ASan/UBSan, TSan, format check, and the smoke suite.
+2. CI must pass: GCC + Clang builds and tests, ASan/UBSan, TSan, fuzzing, format check, and the smoke suite.
 3. If the change affects performance, attach before/after `analyze_results.py` tables
    from the **same machine**, the config used, and the `.meta.json` environment.
 4. Update the docs (`README.md`, `docs/experiment_protocol.md`) when you change a CLI
