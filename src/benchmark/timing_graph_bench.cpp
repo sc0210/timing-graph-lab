@@ -13,6 +13,9 @@
 //   Every timed result is compared with the reference; correctness_pass is written on the
 //   same row, and the exit code is 2 if any comparison failed (Gate D).
 #include <sys/resource.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 #include <unistd.h>
 
 #include <algorithm>
@@ -247,6 +250,11 @@ Options parse(int argc, char** argv) {
 }
 
 std::string cpu_model() {
+#ifdef __APPLE__
+  char buf[256];
+  std::size_t len = sizeof buf;
+  if (sysctlbyname("machdep.cpu.brand_string", buf, &len, nullptr, 0) == 0) return std::string(buf);
+#endif
   std::ifstream f("/proc/cpuinfo");
   for (std::string line; std::getline(f, line);)
     if (line.rfind("model name", 0) == 0) return line.substr(line.find(':') + 2);
@@ -257,7 +265,11 @@ std::string cpu_model() {
 long long peak_rss_bytes() {
   rusage ru{};
   getrusage(RUSAGE_SELF, &ru);
-  return static_cast<long long>(ru.ru_maxrss) * 1024;  // ru_maxrss is KiB on Linux
+#ifdef __APPLE__
+  return static_cast<long long>(ru.ru_maxrss);  // bytes on macOS
+#else
+  return static_cast<long long>(ru.ru_maxrss) * 1024;  // KiB on Linux
+#endif
 }
 
 std::string csv_escape(const std::string& s) {

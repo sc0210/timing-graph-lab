@@ -17,8 +17,19 @@ are listed under **Changed**, because they break comparability with earlier resu
 - `configs/parallel_tbb.json`; `analyze_results.py` and `plot_results.py` include the
   new engines; `.meta.json` records `tbb_engines`.
 - CI installs oneTBB for the compiler, ASan and smoke jobs and keeps one job without it.
+- `scripts/check_env.sh`: checks CMake, make/Ninja, a C++20 compiler (compiles and runs a
+  `<barrier>`/`<span>` probe), Python, and optional oneTBB, matplotlib, git, clang-format;
+  prints what is installed and missing with the install commands for Homebrew / apt / dnf /
+  pacman, and offers to run them (`--check`, `--yes`, `--quiet`). `env.sh` gains `tgl_check`,
+  and `tgl_build` runs the check first. All CI jobs run it.
+- `.github/workflows/macos.yml`: README quick start on macOS 14 and 15 (with oneTBB installed
+  by `check_env.sh --yes`, and without TBB), zsh/bash `env.sh`, and an ASan/UBSan job.
 
 ### Fixed
+- macOS: `peak_rss_bytes` multiplied `ru_maxrss` by 1024, but macOS reports bytes (1024× too
+  large); CPU model, total memory and load average are now recorded on macOS too
+  (`sysctl`, `os.getloadavg`) instead of `unknown`. `env.sh` no longer sets
+  `detect_leaks=1` on macOS, where Apple's ASan does not support LeakSanitizer.
 - `tests/unit` did not compile on macOS: POSIX `close(fd)` resolved to `tgl::close`
   because `<unistd.h>` was not included.
 

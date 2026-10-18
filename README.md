@@ -1,9 +1,10 @@
 # Timing Graph Lab — Mini STA Benchmark Lab
 
 [![CI](https://github.com/sc0210/timing-graph-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/sc0210/timing-graph-lab/actions/workflows/ci.yml)
+[![macOS](https://github.com/sc0210/timing-graph-lab/actions/workflows/macos.yml/badge.svg)](https://github.com/sc0210/timing-graph-lab/actions/workflows/macos.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-informational)
-![Platform](https://img.shields.io/badge/platform-Linux%20x86--64-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey)
 
 A reproducible, measurable, verifiable lab for studying how timing-graph data
 structures, graph traversal, static timing propagation and incremental STA affect
@@ -61,9 +62,12 @@ Each figure is drawn from its own suite: `scaling` for Fig. 1, `parallel` for Fi
 
 ## Quick start
 
-Needs CMake ≥ 3.20, a C++20 compiler and Python 3.
+Needs CMake ≥ 3.20, make (or Ninja), a C++20 compiler and Python ≥ 3.8; oneTBB and
+matplotlib are optional. The first command checks all of them, lists what is installed
+and what is missing, and offers to install the missing ones (Homebrew, apt, dnf or pacman):
 
 ```bash
+scripts/check_env.sh                                # toolchain check (+ install prompt)
 cmake -S . -B build && cmake --build build -j       # Release build
 ctest --test-dir build                              # tests
 python3 scripts/run_suite.py configs/smoke.json     # ~1 min benchmark + report check
@@ -116,7 +120,8 @@ everything can be run from any directory (bash or zsh):
 
 ```bash
 source env.sh                     # uses ./build; or: TGL_BUILD_DIR=build-tsan source env.sh
-tgl_build                         # configure + build (Release; sanitizer set for build-asan/build-tsan)
+tgl_check                         # toolchain check + install prompt (scripts/check_env.sh)
+tgl_build                         # toolchain check, then configure + build (Release; sanitizer set for build-asan/build-tsan)
 tgl_test                          # ctest in the current build dir (extra args go to ctest, e.g. -L unit)
 timing_graph_bench --help         # the binary, now on PATH
 tgl_suite smoke                   # = run_suite.py configs/smoke.json --build-dir $TGL_BUILD_DIR
@@ -159,11 +164,12 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `include/sta/compare.hpp` | Tolerance comparison ε_abs + ε_rel·max(\|x\|,\|y\|), NaN/∞ checks (§7.4) |
 | `src/benchmark/timing_graph_bench.cpp` | Experiment driver / CLI (§10.1), CSV writer (§9.1) |
 | `tests/{unit,property,differential,regression}` | L1–L4 test levels (§7.1); T01–T14 in `tests/unit` (§7.2) |
+| `scripts/check_env.sh` | Toolchain check: required/optional tools, install commands, install prompt (`--check`, `--yes`, `--quiet`) |
 | `scripts/run_suite.py` | SOP runner: gates → matrix of runs → CSV + `.meta.json` + `.graphs.jsonl` (§10) |
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |
 | `scripts/plot_results.py` | The three §12.1 figures: runtime vs size, parallel speedup, incremental speedup (needs matplotlib) |
 | `env.sh` | Sourceable shell environment: PATH, variables, `tgl_*` helpers |
-| `.github/` | CI workflow (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite), issue and PR templates |
+| `.github/` | CI workflows: Linux (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite) and macOS (quick start with/without oneTBB, ASan/UBSan); issue and PR templates |
 | `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `parallel_tbb` (Exp. D + oneTBB), `incremental` (Exp. C) |
 | `docs/experiment_protocol.md` | What exactly each phase times, statistics, environment recording |
 | `docs/validation_report.md` | Test levels, gate results, bugs found, verification evidence |

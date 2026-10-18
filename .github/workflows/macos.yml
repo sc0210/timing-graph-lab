@@ -1,0 +1,93 @@
+name: macOS
+
+# Follows the README quick start on macOS: toolchain check (and install via Homebrew),
+# build, tests, smoke suite, shell environment. Catches Linux-only assumptions early.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+
+jobs:
+  quick-start:
+    name: ${{ matrix.os }} / ${{ matrix.tbb == 'ON' && 'oneTBB' || 'no TBB' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, tbb: "ON" }
+          - { os: macos-14, tbb: "ON" }
+          - { os: macos-15, tbb: "OFF" }
+    steps:
+      - uses: actions/checkout@v4
+      # A python whose pip may install user packages (Homebrew's python is externally managed).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Toolchain check (as found on the runner)
+        run: scripts/check_env.sh --check
+      - name: Install missing tools with the check script
+        if: matrix.tbb == 'ON'
+        run: scripts/check_env.sh --yes
+      - name: Toolchain check (after install)
+        if: matrix.tbb == 'ON'
+        run: scripts/check_env.sh --check
+      - name: Build
+        run: cmake -S . -B build -DTGL_TBB=${{ matrix.tbb }} && cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Smoke suite
+        run: python3 scripts/run_suite.py configs/smoke.json
+      - name: TBB engines
+        if: matrix.tbb == 'ON'
+        run: >-
+          ./build/timing_graph_bench --topology layered --nodes 20000 --layers 50 --algorithm parallel
+          --representation csr --barrier spin,block,tbb,tbb_dag --threads 1,2,4 --repetitions 2 --warmup 1
+          --output results/macos_tbb.csv
+      - name: Analyze and plot
+        run: |
+          python3 scripts/analyze_results.py results/smoke_*.csv --out results/smoke_report.md
+          if [ "${{ matrix.tbb }}" = ON ]; then python3 scripts/plot_results.py results/smoke_*.csv --out-dir results/smoke_figures; fi
+      - name: Shell environment (zsh and bash)
+        run: |
+          zsh -c 'source ./env.sh && tgl_check --quiet && tgl_info && command -v timing_graph_bench && tgl_unload'
+          bash -c 'source env.sh && tgl_check --quiet && tgl_info && command -v timing_graph_bench && tgl_unload'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-results-${{ matrix.os }}-tbb-${{ matrix.tbb }}
+          path: |
+            results/smoke_*
+            results/smoke_figures/
+            results/macos_tbb.csv
+          if-no-files-found: ignore
+
+  asan:
+    name: macos-15 / ASan+UBSan
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain check
+        run: scripts/check_env.sh --check
+      - name: Install oneTBB
+        run: brew install tbb
+      - name: Build
+        run: cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DTGL_SANITIZER=address -DTGL_TBB=ON && cmake --build build-asan -j
+      - name: Test
+        env:
+          # LeakSanitizer is not supported by Apple's ASan.
+          ASAN_OPTIONS: halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-asan --output-on-failure

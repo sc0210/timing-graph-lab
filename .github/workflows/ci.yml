@@ -30,6 +30,8 @@ jobs:
       - name: Install oneTBB
         if: matrix.tbb != 'OFF'
         run: sudo apt-get update && sudo apt-get install -y libtbb-dev
+      - name: Toolchain check
+        run: scripts/check_env.sh --check
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DTGL_TBB=${{ matrix.tbb || 'ON' }}
       - name: Build
@@ -84,8 +86,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install oneTBB
-        run: sudo apt-get update && sudo apt-get install -y libtbb-dev
+      - name: Install missing tools with the check script
+        run: scripts/check_env.sh --yes
       - name: Build
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTGL_TBB=ON && cmake --build build -j
       - name: Check scripts compile

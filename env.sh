@@ -6,7 +6,7 @@
 # Afterwards, from any directory:
 #   timing_graph_bench --help              # the benchmark binary
 #   run_suite.py configs/smoke.json        # the scripts in scripts/
-#   tgl_build / tgl_test / tgl_suite NAME / tgl_info / tgl_unload
+#   tgl_check / tgl_build / tgl_test / tgl_suite NAME / tgl_info / tgl_unload
 #
 # Works in bash and zsh. Sourcing twice is safe; tgl_unload restores the previous PATH.
 
@@ -51,15 +51,27 @@ for _tgl_v in ASAN_OPTIONS UBSAN_OPTIONS TSAN_OPTIONS PYTHONDONTWRITEBYTECODE; d
   eval "[ -z \"\${$_tgl_v+x}\" ]" && _TGL_SET_VARS="$_TGL_SET_VARS $_tgl_v"
 done
 unset _tgl_v
-export ASAN_OPTIONS="${ASAN_OPTIONS:-halt_on_error=1:detect_leaks=1}"
+# LeakSanitizer is not supported by Apple's ASan, so detect_leaks stays off on macOS.
+if [ "$(uname -s)" = Darwin ]; then
+  export ASAN_OPTIONS="${ASAN_OPTIONS:-halt_on_error=1}"
+else
+  export ASAN_OPTIONS="${ASAN_OPTIONS:-halt_on_error=1:detect_leaks=1}"
+fi
 export UBSAN_OPTIONS="${UBSAN_OPTIONS:-halt_on_error=1:print_stacktrace=1}"
 export TSAN_OPTIONS="${TSAN_OPTIONS:-halt_on_error=1:second_deadlock_stack=1}"
 # Keep the scripts from writing __pycache__ into the source tree.
 export PYTHONDONTWRITEBYTECODE=1
 
+# Toolchain check: what is installed, what is missing, and an offer to install it.
+tgl_check() {
+  "$TGL_ROOT/scripts/check_env.sh" "$@"
+}
+
 # Configure and build. Usage: tgl_build [Release|Debug|RelWithDebInfo] [extra cmake args...]
 # The build type defaults to Release; for build-asan / build-tsan the sanitizer is set automatically.
+# Runs the toolchain check first and stops if a required tool is missing (run tgl_check to install it).
 tgl_build() {
+  "$TGL_ROOT/scripts/check_env.sh" --quiet || { echo "tgl_build: run tgl_check to install the missing tools" >&2; return 1; }
   _tgl_type="${1:-Release}"
   [ $# -gt 0 ] && shift
   _tgl_san=""
@@ -113,7 +125,7 @@ tgl_unload() {
   case "${_TGL_SET_VARS:-}" in *" TSAN_OPTIONS"*) unset TSAN_OPTIONS ;; esac
   case "${_TGL_SET_VARS:-}" in *" PYTHONDONTWRITEBYTECODE"*) unset PYTHONDONTWRITEBYTECODE ;; esac
   unset _tgl_v TGL_ROOT TGL_BUILD_DIR TGL_RESULTS_DIR TGL_BENCH _TGL_OLD_PATH _TGL_SET_VARS
-  unset -f tgl_build tgl_test tgl_suite tgl_info tgl_unload
+  unset -f tgl_check tgl_build tgl_test tgl_suite tgl_info tgl_unload
   [ "${1:-}" = "--quiet" ] || echo "timing-graph-lab environment unloaded"
 }
 
