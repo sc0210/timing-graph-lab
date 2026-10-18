@@ -42,6 +42,9 @@
 #include "sta/level_pool.hpp"
 #include "sta/oracle.hpp"
 #include "sta/required.hpp"
+#ifdef TGL_HAVE_TBB
+#include "sta/tbb_parallel.hpp"
+#endif
 
 #ifndef TGL_BUILD_TYPE
 #define TGL_BUILD_TYPE "unknown"
@@ -100,7 +103,9 @@ void usage() {
   --representation R     both | list | csr (comma list)                (both)
   --algorithm A          all | comma list of traversal,timing,parallel,structure,incremental (all)
   --threads LIST         thread counts for parallel phases             (1,2,4)
-  --barrier LIST         spin,block level barrier kinds                (both)
+  --barrier LIST         parallel engines: spin,block (LevelPool barrier kinds),
+                         tbb (level-parallel oneTBB), tbb_dag (dependency-driven
+                         oneTBB, no levels); tbb* need a TBB build      (spin,block)
   --update-ratio LIST    incremental update ratios                     (0,0.01,0.05,0.10)
   --update-dist LIST     localized,distributed,critical                (all three)
   --inc-mode LIST        conservative,early_stop                       (both)
@@ -230,7 +235,13 @@ Options parse(int argc, char** argv) {
   for (int t : o.threads)
     if (t < 1) throw std::invalid_argument("thread count must be >= 1");
   for (auto& b : o.barriers)
-    if (b != "spin" && b != "block") throw std::invalid_argument("unknown barrier " + b);
+    if (b == "tbb" || b == "tbb_dag") {
+#ifndef TGL_HAVE_TBB
+      throw std::invalid_argument("--barrier " + b + " needs a build with oneTBB (cmake -DTGL_TBB=ON)");
+#endif
+    } else if (b != "spin" && b != "block") {
+      throw std::invalid_argument("unknown barrier " + b);
+    }
   if (o.repetitions < 1 || o.warmup < 0) throw std::invalid_argument("need repetitions >= 1, warmup >= 0");
   return o;
 }
@@ -542,37 +553,77 @@ void bench_repr(Context& cx, int r) {
              .time_ns = t_lv,
              .work = levels.num_levels(),
              .mem_bytes = (levels.offsets.capacity() + levels.nodes.capacity()) * sizeof(std::uint32_t)});
+    auto add_par = [&](const std::string& alg, int t, std::int64_t t_at, std::int64_t t_rt, const TimingState& p) {
+      rep.add({.repr = name,
+               .phase = "arrival",
+               .algorithm = alg,
+               .threads = t,
+               .rep = r,
+               .time_ns = t_at,
+               .work = m,
+               .cmp = compare_values(p.at, cx.ref.at, o.tol)});
+      rep.add({.repr = name,
+               .phase = "required",
+               .algorithm = alg,
+               .threads = t,
+               .rep = r,
+               .time_ns = t_rt,
+               .work = m,
+               .cmp = compare_values(p.rt, cx.ref.rt, o.tol)});
+    };
+#ifdef TGL_HAVE_TBB
+    std::optional<DagSchedule> dag;
+    if (std::find(o.barriers.begin(), o.barriers.end(), "tbb_dag") != o.barriers.end()) {
+      Stopwatch sw_dag;
+      dag = make_dag_schedule(g);
+      const auto t_dag = sw_dag.elapsed_ns();
+      rep.add({.repr = name,
+               .phase = "dag_prepare",
+               .algorithm = "dependency_count",
+               .rep = r,
+               .time_ns = t_dag,
+               .work = el.num_nodes,
+               .mem_bytes = dag->memory_bytes()});
+    }
+#endif
     for (const auto& bk : o.barriers)
       for (int t : o.threads) {
-        const std::string alg = "level_parallel_" + bk;
-        Stopwatch sw_pool;
-        LevelPool pool(t, bk == "spin" ? BarrierKind::Spin : BarrierKind::Block);
-        const auto t_pool = sw_pool.elapsed_ns();
-        rep.add({.repr = name, .phase = "pool_start", .algorithm = alg, .threads = t, .rep = r, .time_ns = t_pool});
+        const std::string alg = bk == "tbb_dag" ? "dag_parallel_tbb" : "level_parallel_" + bk;
         TimingState p;
         p.resize(g.num_nodes());
-        Stopwatch sw_pat;
-        propagate_arrival_parallel(g, levels, c, p.at, pool);
-        const auto t_pat = sw_pat.elapsed_ns();
-        Stopwatch sw_prt;
-        propagate_required_parallel(g, levels, c, p.rt, pool);
-        const auto t_prt = sw_prt.elapsed_ns();
-        rep.add({.repr = name,
-                 .phase = "arrival",
-                 .algorithm = alg,
-                 .threads = t,
-                 .rep = r,
-                 .time_ns = t_pat,
-                 .work = m,
-                 .cmp = compare_values(p.at, cx.ref.at, o.tol)});
-        rep.add({.repr = name,
-                 .phase = "required",
-                 .algorithm = alg,
-                 .threads = t,
-                 .rep = r,
-                 .time_ns = t_prt,
-                 .work = m,
-                 .cmp = compare_values(p.rt, cx.ref.rt, o.tol)});
+        std::int64_t t_pool = 0, t_pat = 0, t_prt = 0;
+        if (bk == "spin" || bk == "block") {
+          Stopwatch sw_pool;
+          LevelPool pool(t, bk == "spin" ? BarrierKind::Spin : BarrierKind::Block);
+          t_pool = sw_pool.elapsed_ns();
+          Stopwatch sw_pat;
+          propagate_arrival_parallel(g, levels, c, p.at, pool);
+          t_pat = sw_pat.elapsed_ns();
+          Stopwatch sw_prt;
+          propagate_required_parallel(g, levels, c, p.rt, pool);
+          t_prt = sw_prt.elapsed_ns();
+        }
+#ifdef TGL_HAVE_TBB
+        else {
+          Stopwatch sw_pool;
+          TbbPool pool(t);
+          t_pool = sw_pool.elapsed_ns();
+          Stopwatch sw_pat;
+          if (bk == "tbb_dag")
+            propagate_arrival_dag_tbb(g, *dag, c, p.at, pool);
+          else
+            propagate_arrival_tbb(g, levels, c, p.at, pool);
+          t_pat = sw_pat.elapsed_ns();
+          Stopwatch sw_prt;
+          if (bk == "tbb_dag")
+            propagate_required_dag_tbb(g, *dag, c, p.rt, pool);
+          else
+            propagate_required_tbb(g, levels, c, p.rt, pool);
+          t_prt = sw_prt.elapsed_ns();
+        }
+#endif
+        rep.add({.repr = name, .phase = "pool_start", .algorithm = alg, .threads = t, .rep = r, .time_ns = t_pool});
+        add_par(alg, t, t_pat, t_prt, p);
       }
   }
 

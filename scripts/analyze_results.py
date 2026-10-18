@@ -19,6 +19,11 @@ INT_COLS = ("node_count", "edge_count", "thread_count", "rep", "updated_edges", 
             "level_width_median", "level_width_max")
 
 
+
+def engine_name(alg):
+    """level_parallel_spin -> spin, level_parallel_tbb -> tbb, dag_parallel_tbb -> tbb_dag."""
+    return "tbb_dag" if alg == "dag_parallel_tbb" else alg.replace("level_parallel_", "")
+
 def load(paths):
     rows = []
     for p in paths:
@@ -175,12 +180,15 @@ def report(rows, S):
 
     md += ["## Experiment D — level-parallel propagation (CSR)", "",
            "Speedup(p) = T_1 / T_p with T_1 = serial pull AT+RT; efficiency = speedup / p. "
-           "Algorithm-only = arrival+required; end-to-end adds levelize + pool_start.", ""]
+           "Algorithm-only = arrival+required; end-to-end adds levelize (dag_prepare for tbb_dag) + pool_start. "
+           "Engine spin/block = LevelPool barrier kinds, tbb = level-parallel oneTBB, "
+           "tbb_dag = dependency-driven oneTBB (no levels).", ""]
     body = []
-    algs = sorted({k[5] for k in S if k[5].startswith("level_parallel")})
+    algs = sorted({k[5] for k in S if k[5].startswith(("level_parallel", "dag_parallel"))})
     for g in graphs(S):
         ser = [get(S, *g, "csr", ph, "pull") for ph in ("arrival", "required")]
         lv = get(S, *g, "csr", "levelize", "longest_hop")
+        dp = get(S, *g, "csr", "dag_prepare", "dependency_count")
         if not all(ser):
             continue
         t1 = sum(x["median"] for x in ser)
@@ -190,11 +198,12 @@ def report(rows, S):
                 ps = get(S, *g, "csr", "pool_start", alg, t)
                 if all(par):
                     tp = sum(x["median"] for x in par)
-                    e2e = tp + (lv["median"] if lv else 0) + (ps["median"] if ps else 0)
-                    body.append([*g[:2], ser[0]["depth"], ser[0]["lw_median"], alg.replace("level_parallel_", ""), t,
+                    prep = dp if alg.startswith("dag_parallel") else lv
+                    e2e = tp + (prep["median"] if prep else 0) + (ps["median"] if ps else 0)
+                    body.append([*g[:2], ser[0]["depth"], ser[0]["lw_median"], engine_name(alg), t,
                                  us(tp), f"{t1 / tp:.2f}", f"{t1 / tp / t * 100:.0f}%", us(e2e), f"{t1 / e2e:.2f}",
                                  f"{tp / max(ser[0]['depth'], 1):.2f}"])
-    md += [table(["topology", "nodes", "depth", "median width", "barrier", "threads", "AT+RT µs", "speedup", "efficiency",
+    md += [table(["topology", "nodes", "depth", "median width", "engine", "threads", "AT+RT µs", "speedup", "efficiency",
                   "end-to-end µs", "e2e speedup", "µs/level"], body), ""]
 
     md += ["## Experiment E — traversal (CSR)", "",

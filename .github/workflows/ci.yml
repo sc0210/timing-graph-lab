@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build-test:
-    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}${{ matrix.tbb == 'OFF' && ' / no TBB' || '' }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -24,10 +24,14 @@ jobs:
           - { compiler: gcc, cxx: g++-13, build_type: Release }
           - { compiler: clang, cxx: clang++-18, build_type: Release }
           - { compiler: gcc, cxx: g++-13, build_type: Debug }
+          - { compiler: gcc, cxx: g++-13, build_type: Release, tbb: "OFF" }
     steps:
       - uses: actions/checkout@v4
+      - name: Install oneTBB
+        if: matrix.tbb != 'OFF'
+        run: sudo apt-get update && sudo apt-get install -y libtbb-dev
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DTGL_TBB=${{ matrix.tbb || 'ON' }}
       - name: Build
         run: cmake --build build -j
       - name: Test
@@ -48,6 +52,10 @@ jobs:
       - name: Reduce ASLR entropy for TSan
         if: matrix.sanitizer == 'thread'
         run: sudo sysctl vm.mmap_rnd_bits=28
+      # ASan checks the oneTBB engines too; TSan builds leave TBB off (libtbb is not instrumented).
+      - name: Install oneTBB
+        if: matrix.sanitizer == 'address'
+        run: sudo apt-get update && sudo apt-get install -y libtbb-dev
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_COMPILER=g++-13 -DTGL_SANITIZER=${{ matrix.sanitizer }}
       - name: Build
@@ -76,8 +84,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install oneTBB
+        run: sudo apt-get update && sudo apt-get install -y libtbb-dev
       - name: Build
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTGL_TBB=ON && cmake --build build -j
       - name: Check scripts compile
         run: python -m py_compile scripts/*.py
       - name: Shell environment

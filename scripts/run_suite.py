@@ -161,7 +161,8 @@ def main():
         "os": platform.platform(), "kernel": platform.release(),
         "cpu_governor": read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"),
         "loadavg_at_start": read("/proc/loadavg"), "env": cfg.get("env", {}),
-        "thread_strategy": "fixed LevelPool per thread count (std::thread), created once per measurement and timed as pool_start",
+        "thread_strategy": "fixed LevelPool (std::thread) or TbbPool (oneTBB task_arena) per thread count, created once per measurement and timed as pool_start",
+        "tbb_engines": cmake_cache(build_dir, "TGL_HAVE_TBB"),
         "perf": use_perf, "gates": gates if not args.skip_gates else "skipped",
     }
 

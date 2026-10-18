@@ -31,7 +31,8 @@ min-plus propagation. Liberty, SDC, clocks, setup/hold and parasitics are out of
   per-run environment metadata and config SHA-256, all in CSV and JSON.
 - **Covers the plan's experiment matrix.** Adjacency List vs CSR, four topologies,
   BFS/DFS/Kahn, incremental (conservative vs early-stop, three update distributions) and
-  level-parallel propagation (spin vs blocking barrier).
+  level-parallel propagation (spin vs blocking barrier), plus optional oneTBB engines
+  (level-parallel and dependency-driven) when TBB is installed.
 
 ## Pilot findings
 
@@ -72,6 +73,29 @@ python3 scripts/run_suite.py configs/smoke.json           # ~1 min end-to-end ch
 python3 scripts/run_suite.py configs/baseline.json        # Experiment B + E (+ A at 100K)
 python3 scripts/analyze_results.py results/baseline_*.csv --out results/baseline_report.md
 ```
+
+### Optional: oneTBB engines
+
+With [oneTBB](https://github.com/uxlfoundation/oneTBB) installed (`sudo apt install libtbb-dev`,
+`brew install tbb`), CMake finds it automatically (`TGL_TBB=AUTO`) and two more parallel
+engines are built. Use `-DTGL_TBB=ON` to require TBB or `-DTGL_TBB=OFF` to leave it out.
+Without TBB everything else builds and runs unchanged.
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTGL_TBB=ON && cmake --build build -j
+./build/timing_graph_bench --topology layered --nodes 1000000 --algorithm timing,parallel \
+  --representation csr --barrier spin,block,tbb,tbb_dag --threads 1,2,4
+python3 scripts/run_suite.py configs/parallel_tbb.json    # Experiment D with the TBB engines
+```
+
+| `--barrier` | CSV `algorithm` | Schedule |
+|---|---|---|
+| `spin`, `block` | `level_parallel_spin`, `level_parallel_block` | `LevelPool`: fixed `std::thread` workers, one barrier per level |
+| `tbb` | `level_parallel_tbb` | one `tbb::parallel_for` per level (work stealing, 256-node grain); levels ≤ 256 nodes run inline |
+| `tbb_dag` | `dag_parallel_tbb` | no levels: a node runs when its last predecessor finishes (atomic counters + `parallel_for_each` feeder); needs a `dag_prepare` pass |
+
+TSan builds leave TBB off under `AUTO`, because a prebuilt `libtbb` is not instrumented
+and TSan reports false races inside TBB's task allocator. ASan/UBSan builds include it.
 
 ### Shell environment
 
@@ -117,6 +141,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `include/graph/traversal.hpp` | Kahn (with indegree-init timing), DFS topo sort, BFS, levelization (§6.1) |
 | `include/sta/arrival.hpp`, `required.hpp` | Pull / push arrival, required, slack, level-parallel versions (§6.2, §6.3, §6.6) |
 | `include/sta/level_pool.hpp` | Fixed worker pool, one barrier per level; spin or blocking barrier (§6.6) |
+| `include/sta/tbb_parallel.hpp` | Optional oneTBB engines: level-parallel `parallel_for` and dependency-driven DAG scheduling |
 | `include/sta/incremental.hpp` | Incremental STA, conservative and early-stop modes (§6.4, §6.5) |
 | `include/sta/oracle.hpp` | Path-enumeration and relaxation oracles, independent O(V+E) reference engine (§7.3) |
 | `include/sta/compare.hpp` | Tolerance comparison ε_abs + ε_rel·max(\|x\|,\|y\|), NaN/∞ checks (§7.4) |
@@ -127,7 +152,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `scripts/plot_results.py` | The three §12.1 figures: runtime vs size, parallel speedup, incremental speedup (needs matplotlib) |
 | `env.sh` | Sourceable shell environment: PATH, variables, `tgl_*` helpers |
 | `.github/` | CI workflow (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite), issue and PR templates |
-| `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `incremental` (Exp. C) |
+| `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `parallel_tbb` (Exp. D + oneTBB), `incremental` (Exp. C) |
 | `docs/experiment_protocol.md` | What exactly each phase times, statistics, environment recording |
 | `docs/validation_report.md` | Test levels, gate results, bugs found, verification evidence |
 | `docs/report.md` | Pilot experiment report in the §12.2 template, one section per experiment |
@@ -140,6 +165,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | Exp. B — topology | `baseline.json` | chain / layered / reconvergent / random at 100K, 3 seeds |
 | Exp. C — incremental | `incremental.json` | ratio 0, 0.01, 0.1, 1, 5, 10 % × localized/distributed/critical × conservative/early-stop |
 | Exp. D — threads | `parallel.json` | 1/2/4 threads × spin/blocking barrier, 100K and 1M (chain capped at 100K) |
+| Exp. D — threads + oneTBB | `parallel_tbb.json` | as above, plus `tbb` and `tbb_dag` engines (needs a TBB build) |
 | Exp. E — BFS/DFS/Kahn | `baseline.json` | traversal cost + same propagation over Kahn vs DFS orders |
 
 ## Output (§9.1)

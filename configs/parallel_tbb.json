@@ -1,0 +1,28 @@
+{
+  "name": "parallel_tbb",
+  "description": "Experiment D with oneTBB: LevelPool spin/block barriers vs level-parallel oneTBB (tbb) vs dependency-driven oneTBB (tbb_dag), same graphs as parallel.json. Needs a build with TBB (TGL_TBB=AUTO finds libtbb-dev / brew tbb). Extend threads to the machine's core count.",
+  "repetitions": 10,
+  "warmup": 2,
+  "matrices": [
+    {
+      "topology": ["layered", "reconvergent", "random"],
+      "nodes": [100000, 1000000],
+      "layers": [100],
+      "fanout": [4],
+      "seed": [20261017, 20261018, 20261019],
+      "representation": "csr",
+      "algorithm": "timing,parallel",
+      "threads": "1,2,4",
+      "barrier": "spin,block,tbb,tbb_dag"
+    },
+    {
+      "topology": ["chain"],
+      "nodes": [100000],
+      "seed": [20261017],
+      "representation": "csr",
+      "algorithm": "timing,parallel",
+      "threads": "1,2,4",
+      "barrier": "spin,block,tbb,tbb_dag"
+    }
+  ]
+}

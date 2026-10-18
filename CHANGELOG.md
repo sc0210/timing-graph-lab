@@ -7,6 +7,21 @@ are listed under **Changed**, because they break comparability with earlier resu
 
 ## [Unreleased]
 
+### Added
+- Optional oneTBB engines (`include/sta/tbb_parallel.hpp`), built when CMake finds TBB
+  (`-DTGL_TBB=AUTO|ON|OFF`, default `AUTO`; off under TSan in `AUTO`):
+  `--barrier tbb` (`level_parallel_tbb`, one `parallel_for` per level) and
+  `--barrier tbb_dag` (`dag_parallel_tbb`, dependency-driven, no levels, with a new
+  `dag_prepare` phase). Both are bit-identical to the serial engine and covered by the
+  unit, differential and bench-smoke tests.
+- `configs/parallel_tbb.json`; `analyze_results.py` and `plot_results.py` include the
+  new engines; `.meta.json` records `tbb_engines`.
+- CI installs oneTBB for the compiler, ASan and smoke jobs and keeps one job without it.
+
+### Fixed
+- `tests/unit` did not compile on macOS: POSIX `close(fd)` resolved to `tgl::close`
+  because `<unistd.h>` was not included.
+
 ## [1.0.0] - 2026-10-17
 
 First version that meets the plan's Definition of Done (§11):

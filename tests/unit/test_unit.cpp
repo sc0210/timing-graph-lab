@@ -1,6 +1,9 @@
 // L1 unit tests. T01-T14 refer to the required test cases of plan §7.2.
+#include <unistd.h>
+
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 
 #include "../common.hpp"
 #include "../test_main.hpp"
@@ -9,6 +12,9 @@
 #include "graph/graph_stats.hpp"
 #include "sta/incremental.hpp"
 #include "sta/level_pool.hpp"
+#ifdef TGL_HAVE_TBB
+#include "sta/tbb_parallel.hpp"
+#endif
 
 using namespace tgl;
 using namespace tgl::test;
@@ -204,6 +210,33 @@ TEST(T12_parallel_matches_single_thread) {
     }
 }
 
+#ifdef TGL_HAVE_TBB
+TEST(T12b_tbb_engines_match_single_thread) {
+  const EdgeList el = generate({.kind = "layered", .nodes = 20000, .seed = 9, .layers = 20});
+  CsrGraph g(el);
+  const TimingConstraints c{.default_required = 5000};
+  const TimingState serial = full_sta(g, c);
+  const Levels L = levelize(g, kahn_topo_sort(g).order);
+  const DagSchedule dag = make_dag_schedule(g);
+  for (int threads : {1, 2, 3, 4, 8}) {
+    TbbPool pool(threads);
+    for (int rep = 0; rep < 3; ++rep) {  // pool reuse across runs
+      TimingState p, d;
+      p.resize(g.num_nodes());
+      d.resize(g.num_nodes());
+      propagate_arrival_tbb(g, L, c, p.at, pool);
+      propagate_required_tbb(g, L, c, p.rt, pool);
+      compute_slack(p);
+      CHECK(matches(p, serial));
+      propagate_arrival_dag_tbb(g, dag, c, d.at, pool);
+      propagate_required_dag_tbb(g, dag, c, d.rt, pool);
+      compute_slack(d);
+      CHECK(matches(d, serial));
+    }
+  }
+}
+#endif
+
 TEST(T13_list_and_csr_agree) {
   const EdgeList el = generate({.kind = "random", .nodes = 3000, .seed = 3, .fanout = 3});
   AdjacencyList a(el);
@@ -282,7 +315,7 @@ TEST(edge_list_save_load_round_trip) {
   char path[] = "/tmp/tgl_roundtrip_XXXXXX";
   const int fd = mkstemp(path);
   CHECK(fd >= 0);
-  close(fd);
+  ::close(fd);  // POSIX close, not tgl::close
   write_edge_list(el, path);
   const EdgeList back = read_edge_list(path);
   std::remove(path);
