@@ -43,6 +43,10 @@ jobs:
         run: |
           set -e
           mkdir -p ~/opensta && cd ~/opensta
+          # On failure, publish the end of the build log as an annotation (readable in the
+          # PR checks and through the API, without downloading the raw job log).
+          exec > >(tee "$HOME/opensta-build.log") 2>&1
+          trap 'msg=$(tail -40 "$HOME/opensta-build.log" | sed -e "s/%/%25/g" | sed -e ":a;N;\$!ba;s/\n/%0A/g"); echo "::error title=CUDD/OpenSTA build failed::$msg"' ERR
           git init -q cudd-src && git -C cudd-src fetch -q --depth 1 "$CUDD_REPO" "$CUDD_COMMIT" && git -C cudd-src checkout -q FETCH_HEAD
           (cd cudd-src && autoreconf -fi && ./configure --prefix="$HOME/opensta/cudd" && make -j"$(nproc)" && make install)
           git init -q sta-src && git -C sta-src fetch -q --depth 1 https://github.com/The-OpenROAD-Project/OpenSTA.git "$OPENSTA_COMMIT" && git -C sta-src checkout -q FETCH_HEAD
