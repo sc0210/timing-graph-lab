@@ -61,17 +61,29 @@ Each figure is drawn from its own suite: `scaling` for Fig. 1, `parallel` for Fi
 
 ## Quick start
 
+Needs CMake ≥ 3.20, a C++20 compiler and Python 3.
+
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
-(cd build && ctest --output-on-failure)                 # Gate A + B
+cmake -S . -B build && cmake --build build -j       # Release build
+ctest --test-dir build                              # tests
+python3 scripts/run_suite.py configs/smoke.json     # ~1 min benchmark + report check
+```
 
-# Gate C: sanitizer builds (run_suite.py runs them automatically when present)
-cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug          -DTGL_SANITIZER=address && cmake --build build-asan -j
-cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTGL_SANITIZER=thread  && cmake --build build-tsan -j
+Results land in `results/`. To run a real experiment, pick a config from
+[Experiments → configs](#experiments--configs) and summarize it:
 
-python3 scripts/run_suite.py configs/smoke.json           # ~1 min end-to-end check
-python3 scripts/run_suite.py configs/baseline.json        # Experiment B + E (+ A at 100K)
+```bash
+python3 scripts/run_suite.py configs/baseline.json
 python3 scripts/analyze_results.py results/baseline_*.csv --out results/baseline_report.md
+```
+
+### Sanitizer builds (optional)
+
+`run_suite.py` also runs the ASan/UBSan and TSan test gates when these build directories exist:
+
+```bash
+cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DTGL_SANITIZER=address && cmake --build build-asan -j
+cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTGL_SANITIZER=thread && cmake --build build-tsan -j
 ```
 
 ### Optional: oneTBB engines
