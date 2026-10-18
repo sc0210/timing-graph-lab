@@ -27,7 +27,7 @@ jobs:
           - { compiler: gcc, cxx: g++-13, build_type: Release, tbb: "OFF" }
           - { compiler: gcc, cxx: g++-13, build_type: Release, tbb: "BUNDLED" }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: ${{ matrix.tbb == 'BUNDLED' }}
       - name: Install oneTBB
@@ -52,7 +52,7 @@ jobs:
           - { sanitizer: address, build_type: Debug }
           - { sanitizer: thread, build_type: RelWithDebInfo }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # TSan builds the bundled oneTBB with -fsanitize=thread, so the TBB engines are race-checked too.
           submodules: ${{ matrix.sanitizer == 'thread' }}
@@ -79,7 +79,7 @@ jobs:
     name: clang-format
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check formatting
         run: clang-format-18 --dry-run --Werror $(git ls-files '*.cpp' '*.hpp')
 
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: build-test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
