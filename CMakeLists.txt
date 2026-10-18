@@ -113,6 +113,7 @@ add_library(tgl
   src/graph/edge_list.cpp
   src/graph/csr_graph.cpp
   src/graph/generators.cpp
+  src/graph/bench_netlist.cpp
   src/sta/incremental.cpp
   src/sta/trace.cpp)
 target_include_directories(tgl PUBLIC include)
@@ -122,6 +123,8 @@ if(TGL_HAVE_TBB)
   target_compile_definitions(tgl PUBLIC TGL_HAVE_TBB=1)
 endif()
 
+add_executable(timing_graph_sta src/tools/timing_graph_sta.cpp)
+target_link_libraries(timing_graph_sta PRIVATE tgl)
 add_executable(timing_graph_trace src/tools/timing_graph_trace.cpp)
 target_link_libraries(timing_graph_trace PRIVATE tgl)
 
@@ -133,13 +136,14 @@ target_compile_definitions(timing_graph_bench PRIVATE
   TGL_CXX_FLAGS="${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_bt}}")
 
 enable_testing()
-foreach(suite unit property differential regression stress trace)
+foreach(suite unit property differential regression stress trace netlist)
   add_executable(test_${suite} tests/${suite}/test_${suite}.cpp)
   target_link_libraries(test_${suite} PRIVATE tgl)
   add_test(NAME ${suite} COMMAND test_${suite})
   set_tests_properties(${suite} PROPERTIES LABELS ${suite})
 endforeach()
 target_compile_definitions(test_trace PRIVATE TGL_TRACE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/traces")
+target_compile_definitions(test_netlist PRIVATE TGL_BENCH_DIR="${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/iscas")
 
 add_test(NAME bench_smoke
   COMMAND timing_graph_bench --topology reconvergent --nodes 3000 --layers 30 --repetitions 1 --warmup 0
@@ -147,7 +151,7 @@ add_test(NAME bench_smoke
 set_tests_properties(bench_smoke PROPERTIES LABELS integration)
 # Fuzz targets. Each is always built as <target>_replay (corpus + deterministic random
 # inputs, a regular test on every compiler); TGL_FUZZ=ON also builds the libFuzzer binary.
-foreach(target edge_list_reader engine)
+foreach(target edge_list_reader engine bench_parser)
   add_executable(fuzz_${target}_replay fuzz/fuzz_${target}.cpp fuzz/standalone_driver.cpp)
   target_link_libraries(fuzz_${target}_replay PRIVATE tgl)
   if(TGL_FUZZ)
@@ -160,10 +164,14 @@ add_test(NAME fuzz_edge_list_reader_replay
   COMMAND fuzz_edge_list_reader_replay ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/corpus/edge_list_reader)
 add_test(NAME fuzz_engine_replay
   COMMAND fuzz_engine_replay --random 3000 ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/corpus/engine)
-set_tests_properties(fuzz_edge_list_reader_replay fuzz_engine_replay PROPERTIES LABELS fuzz)
+add_test(NAME fuzz_bench_parser_replay
+  COMMAND fuzz_bench_parser_replay ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/corpus/bench_parser)
+set_tests_properties(fuzz_edge_list_reader_replay fuzz_engine_replay fuzz_bench_parser_replay PROPERTIES LABELS fuzz)
 
 add_test(NAME trace_cli COMMAND timing_graph_trace ${CMAKE_CURRENT_SOURCE_DIR}/tests/traces/plan_example.trace)
 set_tests_properties(trace_cli PROPERTIES LABELS integration)
+add_test(NAME sta_cli_c17 COMMAND timing_graph_sta ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/iscas/c17.bench)
+set_tests_properties(sta_cli_c17 PROPERTIES LABELS integration PASS_REGULAR_EXPRESSION "max arrival 3, WNS 0")
 if(TGL_HAVE_TBB)
   add_test(NAME bench_smoke_tbb
     COMMAND timing_graph_bench --topology reconvergent --nodes 3000 --layers 30 --repetitions 1 --warmup 0

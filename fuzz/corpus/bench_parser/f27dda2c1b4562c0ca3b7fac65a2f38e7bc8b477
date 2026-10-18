@@ -1,0 +1,5 @@
+#)
+n3 = NOT(n1)
+y = XOR(n2, a)
+n2 = NOR(n1, b)
+nF

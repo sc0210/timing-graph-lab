@@ -1,0 +1,8 @@
+# 
+INPUT(b)
+OUTPUT(y)
+OUTPUT(n3)
+q1 = DFF(n3)#q2 = DA²Å
+n2 = NOR(q1, b)
+n3 = NOT(n2)
+y = XOR(n2, q1)

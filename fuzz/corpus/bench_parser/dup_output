@@ -1,0 +1,4 @@
+INPUT(a)
+b = and(a, a)
+OUTPUT(b)
+OUTPUT(b)

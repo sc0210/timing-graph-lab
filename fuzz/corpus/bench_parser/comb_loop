@@ -1,0 +1,4 @@
+INPUT(a)
+x = AND(a, y)
+y = NOT(x)
+OUTPUT(y)

@@ -85,14 +85,15 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=clang++-18 -DTGL_FUZZ=ON -DTGL_TBB=OFF
       - name: Build
-        run: cmake --build build -j --target fuzz_edge_list_reader fuzz_engine
+        run: cmake --build build -j --target fuzz_edge_list_reader fuzz_engine fuzz_bench_parser
       - name: Fuzz
         run: |
           mkdir -p artifacts
-          for t in edge_list_reader engine; do
+          for t in edge_list_reader engine bench_parser; do
             # Fuzz a copy of the committed corpus; new inputs stay in the job, not in the repo.
             cp -r fuzz/corpus/$t corpus_$t
-            ./build/fuzz_$t -max_total_time=60 -rss_limit_mb=2048 -artifact_prefix=artifacts/$t- corpus_$t
+            dict=""; [ -f fuzz/$t.dict ] && dict="-dict=fuzz/$t.dict"
+            ./build/fuzz_$t -max_total_time=60 -rss_limit_mb=2048 -artifact_prefix=artifacts/$t- $dict corpus_$t
           done
       - name: Upload crashing inputs
         if: failure()

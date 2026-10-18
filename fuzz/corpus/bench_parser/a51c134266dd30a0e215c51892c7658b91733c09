@@ -1,0 +1,20 @@
+# Smalle (w(b)DFFy)
+OUTPUT(n3)
+#BBBBBBBFDs
+INPUT(a)
+INPUT(b)
+OUTPUT(y)
+OUTPUT(n2)
+#BBBBBCBBBBFBDFF(PUD(y)
+OUTPUT(n1)
+#BBBBBBBBCBBBB=Ds
+INPBB = DFF(n3)
+q2 = DFF(y)
+n1 = AND(a, q1)
+q1 = DFF(n3)
+Ap2 = DFF(y)					
+
+1 = AND(a, q2)
+n2 = NOR(q1, b)
+n3 = NOT(n2)
+y = XOR(n2, q2)

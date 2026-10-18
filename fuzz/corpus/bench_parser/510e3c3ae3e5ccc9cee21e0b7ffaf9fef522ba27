@@ -1,0 +1,7 @@
+#ates.
+INPUT(1)
+INPUT(3)
+INPUT(6)
+INPUT(7)
+11 = NAND(1, 6)
+16 = NAND(1, 11)

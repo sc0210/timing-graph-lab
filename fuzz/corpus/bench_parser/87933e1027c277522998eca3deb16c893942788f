@@ -1,0 +1,3 @@
+IN= NOT(a)
+n1= NOT(a, y, y)
+y

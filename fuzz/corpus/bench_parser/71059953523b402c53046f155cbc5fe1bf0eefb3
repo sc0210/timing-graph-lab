@@ -1,0 +1,14 @@
+# Smalle (w E‰res.
+INPUT(a)
+INPUT(b)
+OUTPUT(y)
+OUTPUT(n3)
+BBBBBBBBBBBBBB = DFF(n2)
+q2 = DFF(y)
+n1 = AND(a, q1)
+q1 = AND(n3)
+
+1 = AND(a, q1)
+n2 = NOR(q1, b)
+n3 =BUFF(n2)
+y = XOR(n2, q2)
