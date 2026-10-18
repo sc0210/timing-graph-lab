@@ -52,6 +52,12 @@ std::uint64_t fingerprint(const EdgeList& el);
 void write_edge_list(const EdgeList& el, const std::string& path);
 EdgeList read_edge_list(const std::string& path);
 
+// Parses all of `s` as a decimal floating-point number, like std::from_chars: no leading
+// whitespace or '+', no hexadecimal form; "inf" and "nan" are accepted (validate() rejects
+// them as delays); overflow fails. Portable replacement for the floating-point
+// std::from_chars overloads, which libc++ (Apple Clang) lacks before LLVM 20.
+bool parse_double(std::string_view s, double& out);
+
 // Parses the same format from memory. Untrusted input is safe: counts are bounded by
 // max_nodes and by the input length (each edge needs at least 6 bytes), and anything
 // after the declared edges other than whitespace is rejected. Throws std::runtime_error.

@@ -330,3 +330,14 @@ TEST(graph_stats_counts) {
   CHECK_EQ(s.max_fanout, 1u);
   CHECK_EQ(s.fanout_hist[0] + s.fanout_hist[1], 5u);
 }
+
+TEST(parse_double_matches_from_chars_rules) {
+  double v = 0;
+  CHECK(parse_double("1.5", v) && v == 1.5);
+  CHECK(parse_double("-2e3", v) && v == -2000.0);
+  CHECK(parse_double("0.1", v) && v == 0.1);
+  CHECK(parse_double("inf", v) && std::isinf(v));
+  CHECK(parse_double("nan", v) && std::isnan(v));
+  CHECK(parse_double("1e-400", v));  // underflow to zero or a subnormal is accepted; overflow is not
+  for (const char* bad : {"", " 1", "+1", "1 ", "0x10", "1e999", "1.5abc", "abc", "1,5"}) CHECK(!parse_double(bad, v));
+}

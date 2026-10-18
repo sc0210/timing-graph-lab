@@ -18,7 +18,9 @@ are listed under **Changed**, because they break comparability with earlier resu
 - Fuzzing (`fuzz/`): libFuzzer targets for the edge-list reader and a differential
   engine/incremental fuzzer (`-DTGL_FUZZ=ON`, Clang); minimized corpora; standalone
   `fuzz_*_replay` tests on every compiler; a 60 s-per-target fuzz job in CI.
-- `parse_edge_list()`: in-memory edge-list parser used by `read_edge_list`.
+- `parse_edge_list()`: in-memory edge-list parser used by `read_edge_list`, and
+  `parse_double()`, a portable replacement for floating-point `std::from_chars`, which
+  libc++ (Apple Clang, LLVM < 20) does not provide.
 - Optional oneTBB engines (`include/sta/tbb_parallel.hpp`), built when CMake finds TBB
   (`-DTGL_TBB=AUTO|ON|BUNDLED|OFF`, default `AUTO`):
   `--barrier tbb` (`level_parallel_tbb`, one `parallel_for` per level) and

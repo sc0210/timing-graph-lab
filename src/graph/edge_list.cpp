@@ -1,13 +1,17 @@
 #include "graph/edge_list.hpp"
 
 #include <algorithm>
+#include <cctype>
+#include <cerrno>
 #include <charconv>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 
 #include "graph/graph_stats.hpp"
 
@@ -53,6 +57,19 @@ void write_edge_list(const EdgeList& el, const std::string& path) {
   for (const Edge& e : el.edges) std::fprintf(f.get(), "%u %u %.17g\n", e.src, e.dst, e.delay);
 }
 
+bool parse_double(std::string_view s, double& out) {
+  if (s.empty() || s.front() == '+' || std::isspace(static_cast<unsigned char>(s.front()))) return false;
+  if (s.find_first_of("xX") != std::string_view::npos) return false;
+  const std::string buf(s);  // strtod needs a terminator; the copy also bounds it to s
+  char* end = nullptr;
+  errno = 0;
+  const double v = std::strtod(buf.c_str(), &end);
+  if (end != buf.c_str() + buf.size()) return false;
+  if (errno == ERANGE && std::isinf(v)) return false;
+  out = v;
+  return true;
+}
+
 EdgeList read_edge_list(const std::string& path) {
   std::ifstream f(path, std::ios::binary);
   if (!f) throw std::runtime_error("cannot read " + path);
@@ -79,9 +96,14 @@ class Tokens {
   T number(const char* what) {
     const std::string_view t = next(what);
     T v{};
-    const auto [p, ec] = std::from_chars(t.data(), t.data() + t.size(), v);
-    if (ec != std::errc() || p != t.data() + t.size())
-      fail(std::string("invalid ") + what + " '" + std::string(t) + "'");
+    bool ok;
+    if constexpr (std::is_floating_point_v<T>) {
+      ok = parse_double(t, v);
+    } else {
+      const auto [p, ec] = std::from_chars(t.data(), t.data() + t.size(), v);
+      ok = ec == std::errc() && p == t.data() + t.size();
+    }
+    if (!ok) fail(std::string("invalid ") + what + " '" + std::string(t) + "'");
     return v;
   }
   bool at_end() {

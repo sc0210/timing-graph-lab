@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <type_traits>
 #include <unordered_map>
 
 #include "graph/csr_graph.hpp"
@@ -31,8 +32,12 @@ std::vector<std::string_view> split_words(std::string_view line) {
 template <class T>
 std::optional<T> parse_num(std::string_view s) {
   T v{};
-  const auto [p, ec] = std::from_chars(s.data(), s.data() + s.size(), v);
-  if (ec != std::errc() || p != s.data() + s.size()) return std::nullopt;
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!parse_double(s, v)) return std::nullopt;
+  } else {
+    const auto [p, ec] = std::from_chars(s.data(), s.data() + s.size(), v);
+    if (ec != std::errc() || p != s.data() + s.size()) return std::nullopt;
+  }
   return v;
 }
 
