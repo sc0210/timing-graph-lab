@@ -19,11 +19,14 @@ invest time.
 
 ## Development setup
 
-Requirements: Linux x86-64, CMake ≥ 3.20, a C++20 compiler (GCC ≥ 13 or Clang ≥ 18 are
-tested in CI), Python ≥ 3.10 (standard library only; `matplotlib` optional for plots).
+Requirements: Linux or macOS, CMake ≥ 3.20, a C++20 compiler (GCC 13, Clang 18 and
+AppleClang are tested in CI), Python ≥ 3.10 (standard library only; `matplotlib` optional
+for plots). oneTBB is optional and comes as a submodule. `scripts/check_env.sh` checks all
+of this and offers to install what is missing.
 
 ```bash
-git clone https://github.com/sc0210/timing-graph-lab && cd timing-graph-lab
+git clone --recursive https://github.com/sc0210/timing-graph-lab && cd timing-graph-lab
+scripts/check_env.sh
 source env.sh
 tgl_build && tgl_test                                     # Release build + all suites
 TGL_BUILD_DIR=build-asan source env.sh && tgl_build Debug && tgl_test

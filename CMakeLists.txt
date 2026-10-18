@@ -10,9 +10,15 @@ endif()
 
 set(TGL_SANITIZER "" CACHE STRING "Sanitizer build: '' | address (ASan+UBSan) | thread (TSan)")
 option(TGL_NATIVE "Compile with -march=native (results become CPU-specific)" OFF)
+set(TGL_TBB AUTO CACHE STRING
+    "oneTBB engines (level_parallel_tbb, dag_parallel_tbb): AUTO | ON | BUNDLED | OFF")
+set_property(CACHE TGL_TBB PROPERTY STRINGS AUTO ON BUNDLED OFF)
 find_package(Threads REQUIRED)
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+# No fused multiply-add contraction: Clang contracts a*b+c by default on arm64 (Apple
+# Silicon), which changes rounding and breaks bit-identical results across platforms.
+add_compile_options(-ffp-contract=off)
 if(TGL_NATIVE)
   add_compile_options(-march=native)
 endif()
@@ -26,6 +32,71 @@ elseif(NOT TGL_SANITIZER STREQUAL "")
   message(FATAL_ERROR "TGL_SANITIZER must be '', address or thread")
 endif()
 
+# oneTBB, after the compile options above so that a bundled build inherits the sanitizer.
+#   AUTO    system TBB, else the third_party/oneTBB submodule if checked out, else none.
+#           Under TSan the submodule is preferred: a prebuilt libtbb is not instrumented and
+#           TSan reports false races inside TBB's task allocator.
+#   ON      like AUTO, but an error if neither is available
+#   BUNDLED always build the submodule
+set(TGL_TBB_BUNDLED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/oneTBB)
+set(TGL_HAVE_TBB OFF)
+set(TGL_TBB_SOURCE none)
+set(_tgl_tbb_bundle_ok OFF)
+if(EXISTS ${TGL_TBB_BUNDLED_DIR}/CMakeLists.txt)
+  set(_tgl_tbb_bundle_ok ON)
+endif()
+if(NOT TGL_TBB MATCHES "^(AUTO|ON|BUNDLED|OFF)$")
+  message(FATAL_ERROR "TGL_TBB must be AUTO, ON, BUNDLED or OFF")
+elseif(TGL_TBB STREQUAL "BUNDLED")
+  if(NOT _tgl_tbb_bundle_ok)
+    message(FATAL_ERROR "TGL_TBB=BUNDLED: run git submodule update --init third_party/oneTBB")
+  endif()
+  set(TGL_TBB_SOURCE bundled)
+elseif(NOT TGL_TBB STREQUAL "OFF")
+  if(TGL_SANITIZER STREQUAL "thread" AND _tgl_tbb_bundle_ok)
+    set(TGL_TBB_SOURCE bundled)
+  elseif(NOT TGL_SANITIZER STREQUAL "thread" OR TGL_TBB STREQUAL "ON")
+    find_package(TBB QUIET)
+    if(TBB_FOUND)
+      set(TGL_TBB_SOURCE system)
+    elseif(_tgl_tbb_bundle_ok)
+      set(TGL_TBB_SOURCE bundled)
+    endif()
+  else()
+    message(STATUS "TGL_TBB=AUTO under TSan needs the submodule (a prebuilt libtbb is not instrumented)")
+  endif()
+  if(TGL_TBB STREQUAL "ON" AND TGL_TBB_SOURCE STREQUAL "none")
+    message(FATAL_ERROR "TGL_TBB=ON: install oneTBB or run git submodule update --init third_party/oneTBB")
+  endif()
+endif()
+
+if(TGL_TBB_SOURCE STREQUAL "bundled")
+  set(TBB_TEST OFF CACHE BOOL "" FORCE)
+  set(TBB_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(TBB_STRICT OFF CACHE BOOL "" FORCE)
+  set(TBB_INSTALL OFF CACHE BOOL "" FORCE)
+  set(TBBMALLOC_BUILD OFF CACHE BOOL "" FORCE)
+  set(TBBMALLOC_PROXY_BUILD OFF CACHE BOOL "" FORCE)
+  set(TBB_DISABLE_HWLOC_AUTOMATIC_SEARCH ON CACHE BOOL "" FORCE)  # tbbbind (NUMA pinning) is not used
+  set(TBB_OUTPUT_DIR_BASE third_party/oneTBB/lib)
+  add_subdirectory(${TGL_TBB_BUNDLED_DIR} ${CMAKE_BINARY_DIR}/third_party/oneTBB EXCLUDE_FROM_ALL)
+  # Third-party code: its warnings are not ours to fix, and its headers count as system headers.
+  set_target_properties(tbb PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
+  get_target_property(_tgl_tbb_inc tbb INTERFACE_INCLUDE_DIRECTORIES)
+  set_target_properties(tbb PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_tgl_tbb_inc}")
+  file(STRINGS ${TGL_TBB_BUNDLED_DIR}/include/oneapi/tbb/version.h _tgl_tbb_ver REGEX "#define TBB_VERSION_(MAJOR|MINOR) ")
+  string(REGEX REPLACE "[^0-9;]" "" _tgl_tbb_ver "${_tgl_tbb_ver}")
+  string(REPLACE ";" "." TBB_VERSION "${_tgl_tbb_ver}")
+endif()
+if(NOT TGL_TBB_SOURCE STREQUAL "none")
+  set(TGL_HAVE_TBB ON)
+  message(STATUS "oneTBB ${TBB_VERSION} (${TGL_TBB_SOURCE}): TBB engines enabled")
+else()
+  message(STATUS "oneTBB not used: TBB engines disabled")
+endif()
+set(TGL_HAVE_TBB ${TGL_HAVE_TBB} CACHE INTERNAL "TBB engines compiled in (read by run_suite.py)")
+set(TGL_TBB_SOURCE ${TGL_TBB_SOURCE} CACHE INTERNAL "system | bundled | none (read by run_suite.py)")
+
 add_library(tgl
   src/graph/edge_list.cpp
   src/graph/csr_graph.cpp
@@ -33,6 +104,10 @@ add_library(tgl
   src/sta/incremental.cpp)
 target_include_directories(tgl PUBLIC include)
 target_link_libraries(tgl PUBLIC Threads::Threads)
+if(TGL_HAVE_TBB)
+  target_link_libraries(tgl PUBLIC TBB::tbb)
+  target_compile_definitions(tgl PUBLIC TGL_HAVE_TBB=1)
+endif()
 
 add_executable(timing_graph_bench src/benchmark/timing_graph_bench.cpp)
 target_link_libraries(timing_graph_bench PRIVATE tgl)
@@ -53,3 +128,9 @@ add_test(NAME bench_smoke
   COMMAND timing_graph_bench --topology reconvergent --nodes 3000 --layers 30 --repetitions 1 --warmup 0
           --threads 1,2 --output ${CMAKE_BINARY_DIR}/bench_smoke.csv)
 set_tests_properties(bench_smoke PROPERTIES LABELS integration)
+if(TGL_HAVE_TBB)
+  add_test(NAME bench_smoke_tbb
+    COMMAND timing_graph_bench --topology reconvergent --nodes 3000 --layers 30 --repetitions 1 --warmup 0
+            --algorithm parallel --threads 1,2 --barrier tbb,tbb_dag --output ${CMAKE_BINARY_DIR}/bench_smoke_tbb.csv)
+  set_tests_properties(bench_smoke_tbb PROPERTIES LABELS integration)
+endif()

@@ -5,6 +5,9 @@
 #include "graph/generators.hpp"
 #include "sta/incremental.hpp"
 #include "sta/level_pool.hpp"
+#ifdef TGL_HAVE_TBB
+#include "sta/tbb_parallel.hpp"
+#endif
 
 using namespace tgl;
 using namespace tgl::test;
@@ -61,7 +64,7 @@ TEST(reference_engine_matches_relaxation_on_medium_graphs) {
 }
 
 TEST(all_engines_match_reference) {
-  // List / CSR, pull / push / DFS order, level-parallel with 1-4 threads.
+  // List / CSR, pull / push / DFS order, level-parallel with 1-4 threads (LevelPool, and oneTBB when built).
   for (const char* kind : kKinds)
     for (std::uint64_t seed = 1; seed <= 6; ++seed) {
       // Chains get one barrier per node, so keep them small enough for sanitizer builds.
@@ -93,6 +96,23 @@ TEST(all_engines_match_reference) {
         compute_slack(p);
         CHECK(matches(p, ref));
       }
+#ifdef TGL_HAVE_TBB
+      const DagSchedule dag = make_dag_schedule(g);
+      for (int threads : {1, 2, 4}) {
+        TbbPool pool(threads);
+        TimingState p, d;
+        p.resize(el.num_nodes);
+        d.resize(el.num_nodes);
+        propagate_arrival_tbb(g, L, c, p.at, pool);
+        propagate_required_tbb(g, L, c, p.rt, pool);
+        compute_slack(p);
+        CHECK(matches(p, ref));
+        propagate_arrival_dag_tbb(a, dag, c, d.at, pool);  // List, to cover both representations
+        propagate_required_dag_tbb(a, dag, c, d.rt, pool);
+        compute_slack(d);
+        CHECK(matches(d, ref));
+      }
+#endif
     }
 }
 

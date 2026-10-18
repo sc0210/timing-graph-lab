@@ -1,9 +1,10 @@
 # Timing Graph Lab — Mini STA Benchmark Lab
 
 [![CI](https://github.com/sc0210/timing-graph-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/sc0210/timing-graph-lab/actions/workflows/ci.yml)
+[![macOS](https://github.com/sc0210/timing-graph-lab/actions/workflows/macos.yml/badge.svg)](https://github.com/sc0210/timing-graph-lab/actions/workflows/macos.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-informational)
-![Platform](https://img.shields.io/badge/platform-Linux%20x86--64-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey)
 
 A reproducible, measurable, verifiable lab for studying how timing-graph data
 structures, graph traversal, static timing propagation and incremental STA affect
@@ -31,7 +32,8 @@ min-plus propagation. Liberty, SDC, clocks, setup/hold and parasitics are out of
   per-run environment metadata and config SHA-256, all in CSV and JSON.
 - **Covers the plan's experiment matrix.** Adjacency List vs CSR, four topologies,
   BFS/DFS/Kahn, incremental (conservative vs early-stop, three update distributions) and
-  level-parallel propagation (spin vs blocking barrier).
+  level-parallel propagation (spin vs blocking barrier), plus optional oneTBB engines
+  (level-parallel and dependency-driven) when TBB is installed.
 
 ## Pilot findings
 
@@ -60,18 +62,70 @@ Each figure is drawn from its own suite: `scaling` for Fig. 1, `parallel` for Fi
 
 ## Quick start
 
+Needs CMake ≥ 3.20, make (or Ninja), a C++20 compiler and Python ≥ 3.8; oneTBB and
+matplotlib are optional. The first command checks all of them, lists what is installed
+and what is missing, and offers to install the missing ones (Homebrew, apt, dnf or pacman):
+
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
-(cd build && ctest --output-on-failure)                 # Gate A + B
+scripts/check_env.sh                                # toolchain check (+ install prompt)
+cmake -S . -B build && cmake --build build -j       # Release build
+ctest --test-dir build                              # tests
+python3 scripts/run_suite.py configs/smoke.json     # ~1 min benchmark + report check
+```
 
-# Gate C: sanitizer builds (run_suite.py runs them automatically when present)
-cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug          -DTGL_SANITIZER=address && cmake --build build-asan -j
-cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTGL_SANITIZER=thread  && cmake --build build-tsan -j
+Results land in `results/`. To run a real experiment, pick a config from
+[Experiments → configs](#experiments--configs) and summarize it:
 
-python3 scripts/run_suite.py configs/smoke.json           # ~1 min end-to-end check
-python3 scripts/run_suite.py configs/baseline.json        # Experiment B + E (+ A at 100K)
+```bash
+python3 scripts/run_suite.py configs/baseline.json
 python3 scripts/analyze_results.py results/baseline_*.csv --out results/baseline_report.md
 ```
+
+### Sanitizer builds (optional)
+
+`run_suite.py` also runs the ASan/UBSan and TSan test gates when these build directories exist:
+
+```bash
+cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DTGL_SANITIZER=address && cmake --build build-asan -j
+cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTGL_SANITIZER=thread && cmake --build build-tsan -j
+```
+
+### Optional: oneTBB engines
+
+[oneTBB](https://github.com/uxlfoundation/oneTBB) comes with the repository as a git
+submodule (`third_party/oneTBB`, pinned to v2022.3.0), so no system package is needed.
+Clone with `--recursive`, or fetch it later (`scripts/check_env.sh` offers this too):
+
+```bash
+git clone --recursive https://github.com/sc0210/timing-graph-lab      # or, in an existing clone:
+git submodule update --init --depth 1 third_party/oneTBB
+```
+
+| `-DTGL_TBB=` | oneTBB used |
+|---|---|
+| `AUTO` (default) | system package if installed (faster to build), else the submodule if checked out, else none |
+| `ON` | like `AUTO`, but an error if neither is available |
+| `BUNDLED` | always the submodule (built with the project, ≈ 40 s) |
+| `OFF` | none |
+
+Without TBB everything else builds and runs unchanged; the two TBB engines are simply absent.
+
+```bash
+cmake -S . -B build -DTGL_TBB=ON && cmake --build build -j
+./build/timing_graph_bench --topology layered --nodes 1000000 --algorithm timing,parallel \
+  --representation csr --barrier spin,block,tbb,tbb_dag --threads 1,2,4
+python3 scripts/run_suite.py configs/parallel_tbb.json    # Experiment D with the TBB engines
+```
+
+| `--barrier` | CSV `algorithm` | Schedule |
+|---|---|---|
+| `spin`, `block` | `level_parallel_spin`, `level_parallel_block` | `LevelPool`: fixed `std::thread` workers, one barrier per level |
+| `tbb` | `level_parallel_tbb` | one `tbb::parallel_for` per level (work stealing, 256-node grain); levels ≤ 256 nodes run inline |
+| `tbb_dag` | `dag_parallel_tbb` | no levels: a node runs when its last predecessor finishes (atomic counters + `parallel_for_each` feeder); needs a `dag_prepare` pass |
+
+TSan builds use the submodule under `AUTO`: it is compiled with `-fsanitize=thread`, so the
+TBB engines are race-checked as well. A prebuilt `libtbb` is not instrumented and makes
+TSan report false races inside TBB, so without the submodule TSan builds leave TBB off.
 
 ### Shell environment
 
@@ -80,7 +134,8 @@ everything can be run from any directory (bash or zsh):
 
 ```bash
 source env.sh                     # uses ./build; or: TGL_BUILD_DIR=build-tsan source env.sh
-tgl_build                         # configure + build (Release; sanitizer set for build-asan/build-tsan)
+tgl_check                         # toolchain check + install prompt (scripts/check_env.sh)
+tgl_build                         # toolchain check, then configure + build (Release; sanitizer set for build-asan/build-tsan)
 tgl_test                          # ctest in the current build dir (extra args go to ctest, e.g. -L unit)
 timing_graph_bench --help         # the binary, now on PATH
 tgl_suite smoke                   # = run_suite.py configs/smoke.json --build-dir $TGL_BUILD_DIR
@@ -117,17 +172,20 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `include/graph/traversal.hpp` | Kahn (with indegree-init timing), DFS topo sort, BFS, levelization (§6.1) |
 | `include/sta/arrival.hpp`, `required.hpp` | Pull / push arrival, required, slack, level-parallel versions (§6.2, §6.3, §6.6) |
 | `include/sta/level_pool.hpp` | Fixed worker pool, one barrier per level; spin or blocking barrier (§6.6) |
+| `third_party/oneTBB` | oneTBB v2022.3.0 as a git submodule (optional; see [oneTBB engines](#optional-onetbb-engines)) |
+| `include/sta/tbb_parallel.hpp` | Optional oneTBB engines: level-parallel `parallel_for` and dependency-driven DAG scheduling |
 | `include/sta/incremental.hpp` | Incremental STA, conservative and early-stop modes (§6.4, §6.5) |
 | `include/sta/oracle.hpp` | Path-enumeration and relaxation oracles, independent O(V+E) reference engine (§7.3) |
 | `include/sta/compare.hpp` | Tolerance comparison ε_abs + ε_rel·max(\|x\|,\|y\|), NaN/∞ checks (§7.4) |
 | `src/benchmark/timing_graph_bench.cpp` | Experiment driver / CLI (§10.1), CSV writer (§9.1) |
 | `tests/{unit,property,differential,regression}` | L1–L4 test levels (§7.1); T01–T14 in `tests/unit` (§7.2) |
+| `scripts/check_env.sh` | Toolchain check: required/optional tools, install commands, install prompt (`--check`, `--yes`, `--quiet`) |
 | `scripts/run_suite.py` | SOP runner: gates → matrix of runs → CSV + `.meta.json` + `.graphs.jsonl` (§10) |
 | `scripts/analyze_results.py` | Gate D filter, per-experiment tables (stdlib only) |
 | `scripts/plot_results.py` | The three §12.1 figures: runtime vs size, parallel speedup, incremental speedup (needs matplotlib) |
 | `env.sh` | Sourceable shell environment: PATH, variables, `tgl_*` helpers |
-| `.github/` | CI workflow (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite), issue and PR templates |
-| `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `incremental` (Exp. C) |
+| `.github/` | CI workflows: Linux (GCC/Clang, ASan/UBSan, TSan, clang-format, smoke suite) and macOS (quick start with/without oneTBB, ASan/UBSan); issue and PR templates |
+| `configs/*.json` | `smoke`, `baseline` (Exp. B/E), `scaling` (Exp. A), `parallel` (Exp. D), `parallel_tbb` (Exp. D + oneTBB), `incremental` (Exp. C) |
 | `docs/experiment_protocol.md` | What exactly each phase times, statistics, environment recording |
 | `docs/validation_report.md` | Test levels, gate results, bugs found, verification evidence |
 | `docs/report.md` | Pilot experiment report in the §12.2 template, one section per experiment |
@@ -140,6 +198,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | Exp. B — topology | `baseline.json` | chain / layered / reconvergent / random at 100K, 3 seeds |
 | Exp. C — incremental | `incremental.json` | ratio 0, 0.01, 0.1, 1, 5, 10 % × localized/distributed/critical × conservative/early-stop |
 | Exp. D — threads | `parallel.json` | 1/2/4 threads × spin/blocking barrier, 100K and 1M (chain capped at 100K) |
+| Exp. D — threads + oneTBB | `parallel_tbb.json` | as above, plus `tbb` and `tbb_dag` engines (needs a TBB build) |
 | Exp. E — BFS/DFS/Kahn | `baseline.json` | traversal cost + same propagation over Kahn vs DFS orders |
 
 ## Output (§9.1)

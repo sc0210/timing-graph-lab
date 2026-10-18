@@ -1,0 +1,4 @@
+[submodule "third_party/oneTBB"]
+	path = third_party/oneTBB
+	url = https://github.com/uxlfoundation/oneTBB.git
+	shallow = true

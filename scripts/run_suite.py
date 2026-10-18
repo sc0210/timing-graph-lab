@@ -61,6 +61,8 @@ def cpu_model():
     for line in read("/proc/cpuinfo", "").splitlines():
         if line.startswith("model name"):
             return line.split(":", 1)[1].strip()
+    if sys.platform == "darwin":
+        return sh(["sysctl", "-n", "machdep.cpu.brand_string"]) or platform.processor() or "unknown"
     return platform.processor() or "unknown"
 
 
@@ -68,7 +70,17 @@ def mem_total_bytes():
     for line in read("/proc/meminfo", "").splitlines():
         if line.startswith("MemTotal:"):
             return int(line.split()[1]) * 1024
+    if sys.platform == "darwin":
+        out = sh(["sysctl", "-n", "hw.memsize"])
+        return int(out) if out and out.isdigit() else None
     return None
+
+
+def loadavg():
+    try:
+        return " ".join(f"{x:.2f}" for x in os.getloadavg())
+    except OSError:
+        return "unknown"
 
 
 def cmake_cache(build_dir, key):
@@ -160,8 +172,9 @@ def main():
         "cpu": cpu_model(), "logical_cpus": os.cpu_count(), "mem_total_bytes": mem_total_bytes(),
         "os": platform.platform(), "kernel": platform.release(),
         "cpu_governor": read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"),
-        "loadavg_at_start": read("/proc/loadavg"), "env": cfg.get("env", {}),
-        "thread_strategy": "fixed LevelPool per thread count (std::thread), created once per measurement and timed as pool_start",
+        "loadavg_at_start": loadavg(), "env": cfg.get("env", {}),
+        "thread_strategy": "fixed LevelPool (std::thread) or TbbPool (oneTBB task_arena) per thread count, created once per measurement and timed as pool_start",
+        "tbb_engines": cmake_cache(build_dir, "TGL_HAVE_TBB"), "tbb_source": cmake_cache(build_dir, "TGL_TBB_SOURCE"),
         "perf": use_perf, "gates": gates if not args.skip_gates else "skipped",
     }
 
@@ -198,7 +211,7 @@ def main():
             print(f"   FAILED: {reason}: {r.stderr.strip().splitlines()[-1:] }", file=sys.stderr)
 
     meta["finished"] = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    meta["loadavg_at_end"] = read("/proc/loadavg")
+    meta["loadavg_at_end"] = loadavg()
     meta["failed_points"] = failures
     if not args.dry_run:
         Path(f"{base}.meta.json").write_text(json.dumps(meta, indent=2))

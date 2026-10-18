@@ -38,6 +38,9 @@ freshly allocated structures.
 | `levelize` | computing level buckets from a topological order | — |
 | `pool_start` / `level_parallel_*` | creating the worker threads for one thread count | joining them |
 | `arrival`, `required` / `level_parallel_*` | one parallel pass over all levels, pool already running | comparison |
+| `pool_start` / `level_parallel_tbb`, `dag_parallel_tbb` | `global_control` + `task_arena` creation and one warm-up `parallel_for` that starts the workers | destruction |
+| `dag_prepare` / `dependency_count` | fanin/fanout counts, source and sink lists (once per graph, like `levelize`) | — |
+| `arrival`, `required` / `dag_parallel_tbb` | resetting the atomic counters + one dependency-driven pass, arena already running | comparison |
 | `edge_insert` / `append` (list) | inserting ⌈1 % · \|E\|⌉ forward edges with `add_edge` | — |
 | `edge_insert` / `rebuild` (CSR) | rebuilding the CSR from the extended edge list | copying the edge list |
 | `incremental` / `conservative`, `early_stop` | applying all edge-delay changes + one `update()` | reset, comparison, affected-region preview |
@@ -100,6 +103,10 @@ Derived quantities:
   once per (thread count, barrier kind) per repetition. Creation is timed as
   `pool_start` and reused for the arrival and required passes. Threads are not pinned.
   The spin barrier assumes p ≤ physical cores; with oversubscription use `block`.
+- oneTBB engines (`--barrier tbb,tbb_dag`): `TbbPool` limits concurrency to `p` with
+  `tbb::global_control` and a `tbb::task_arena(p)`; TBB's worker threads are shared
+  process-wide and reused between pools after the first one is created. `.meta.json`
+  records `tbb_engines` (whether the build has TBB).
 - Per-level structure is recorded (`depth`, `level_width_median`, `level_width_max`),
   because barrier cost per level, not node count, bounds level-parallel speedup.
 

@@ -43,8 +43,8 @@ TEXT = "#0b0b0b"
 TEXT_2 = "#52514e"
 MUTED = "#8a8984"
 GRID = "#e7e6e2"
-SLOTS = ["#2a78d6", "#eb6834", "#1baf7a"]  # categorical slots 1-3, fixed order
-MARKERS = ["o", "s", "^"]
+SLOTS = ["#2a78d6", "#eb6834", "#1baf7a", "#9b59b6"]  # categorical slots 1-4, fixed order
+MARKERS = ["o", "s", "^", "D"]
 TOPOLOGIES = ["chain", "layered", "reconvergent", "random"]
 
 # summarize() key: (topology, nodes, fanout, repr, phase, algorithm, threads, ratio, dist)
@@ -116,13 +116,14 @@ def fig_runtime(S, out):
 
 def fig_speedup(S, out):
     """Fig. 2: parallel speedup vs threads per topology (plan §12.1, Experiment D)."""
-    algs = [("level_parallel_spin", "spin barrier"), ("level_parallel_block", "blocking barrier")]
-    rows = sorted({k[1] for k in S if k[5].startswith("level_parallel")})
-    topos = topologies_in(S, lambda k: k[5].startswith("level_parallel"))
+    algs = [("level_parallel_spin", "spin barrier"), ("level_parallel_block", "blocking barrier"),
+            ("level_parallel_tbb", "oneTBB level-parallel"), ("dag_parallel_tbb", "oneTBB dependency-driven")]
+    rows = sorted({k[1] for k in S if k[5].startswith(("level_parallel", "dag_parallel"))})
+    topos = topologies_in(S, lambda k: k[5].startswith(("level_parallel", "dag_parallel")))
     if not rows:
-        print("fig2: no level_parallel rows (run configs/parallel.json); skipped")
+        print("fig2: no parallel rows (run configs/parallel.json); skipped")
         return
-    tmax = max(k[6] for k in S if k[5].startswith("level_parallel"))
+    tmax = max(k[6] for k in S if k[5].startswith(("level_parallel", "dag_parallel")))
     # The chain (one node per level) is orders of magnitude below serial, so it gets its own
     # y scale; all other panels share one range so they can be compared directly.
     fig, axes = plt.subplots(len(rows), len(topos), figsize=(3.3 * len(topos), 3.0 * len(rows) + 0.6),
@@ -145,6 +146,7 @@ def fig_speedup(S, out):
                 continue
             else:
                 t1 = sum(b["median"] for b in base)
+                lo = 0.25
                 for slot, (alg, label) in enumerate(algs):
                     ts = sorted({k[6] for k in S if k[0] == topo and k[1] == n and k[5] == alg})
                     pts = []
@@ -154,6 +156,7 @@ def fig_speedup(S, out):
                         if len(par) == 2:
                             pts.append((t, t1 / sum(p["median"] for p in par)))
                     if pts:
+                        lo = min(lo, *(p[1] / 1.4 for p in pts))
                         series(ax, [p[0] for p in pts], [p[1] for p in pts], slot, label)
                 d = base[0]["depth"]
                 ax.text(0.03, 0.95, f"depth {d:,}", transform=ax.transAxes, va="top", fontsize=8, color=TEXT_2)
@@ -161,11 +164,11 @@ def fig_speedup(S, out):
                 ax.set_ylabel("speedup vs serial\n(arrival + required)")
             if r == len(rows) - 1:
                 ax.set_xlabel("threads")
-            ax.set_xticks(sorted({k[6] for k in S if k[5].startswith("level_parallel")}))
+            ax.set_xticks(sorted({k[6] for k in S if k[5].startswith(("level_parallel", "dag_parallel"))}))
             ax.set_yscale("log", base=2)
             ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:g}×" if y >= 1 else f"1/{1 / y:.0f}×"))
             if topo != "chain":
-                ax.set_ylim(0.25, tmax * 1.4)
+                ax.set_ylim(lo, tmax * 1.4)
     axes[0][-1].annotate("ideal y = x", (tmax, tmax), xytext=(-4, -10), textcoords="offset points", ha="right",
                          fontsize=8, color=MUTED)
     # Legend in the bottom-right corner of the first non-chain panel of the last row (empty there).
