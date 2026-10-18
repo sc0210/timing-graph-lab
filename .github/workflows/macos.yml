@@ -21,14 +21,14 @@ env:
 
 jobs:
   quick-start:
-    name: ${{ matrix.os }} / ${{ matrix.tbb == 'ON' && 'oneTBB' || 'no TBB' }}
+    name: ${{ matrix.os }} / ${{ matrix.tbb == 'OFF' && 'no TBB' || (matrix.os == 'macos-15' && 'oneTBB (Homebrew)' || 'oneTBB (submodule)') }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-15, tbb: "ON" }
-          - { os: macos-14, tbb: "ON" }
+          - { os: macos-15, tbb: "ON" }   # oneTBB from Homebrew
+          - { os: macos-14, tbb: "ON" }   # oneTBB from the submodule, initialized by check_env.sh --yes
           - { os: macos-15, tbb: "OFF" }
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,9 @@ jobs:
           python-version: "3.12"
       - name: Toolchain check (as found on the runner)
         run: scripts/check_env.sh --check
+      - name: Install oneTBB from Homebrew
+        if: matrix.tbb == 'ON' && matrix.os == 'macos-15'
+        run: brew install tbb
       - name: Install missing tools with the check script
         if: matrix.tbb == 'ON'
         run: scripts/check_env.sh --yes

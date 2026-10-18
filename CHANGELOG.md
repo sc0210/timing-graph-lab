@@ -9,7 +9,7 @@ are listed under **Changed**, because they break comparability with earlier resu
 
 ### Added
 - Optional oneTBB engines (`include/sta/tbb_parallel.hpp`), built when CMake finds TBB
-  (`-DTGL_TBB=AUTO|ON|OFF`, default `AUTO`; off under TSan in `AUTO`):
+  (`-DTGL_TBB=AUTO|ON|BUNDLED|OFF`, default `AUTO`):
   `--barrier tbb` (`level_parallel_tbb`, one `parallel_for` per level) and
   `--barrier tbb_dag` (`dag_parallel_tbb`, dependency-driven, no levels, with a new
   `dag_prepare` phase). Both are bit-identical to the serial engine and covered by the
@@ -22,6 +22,11 @@ are listed under **Changed**, because they break comparability with earlier resu
   prints what is installed and missing with the install commands for Homebrew / apt / dnf /
   pacman, and offers to run them (`--check`, `--yes`, `--quiet`). `env.sh` gains `tgl_check`,
   and `tgl_build` runs the check first. All CI jobs run it.
+- oneTBB v2022.3.0 as a git submodule (`third_party/oneTBB`): the repository builds the TBB
+  engines without any system package. `TGL_TBB` gains `BUNDLED`; `AUTO` prefers a system
+  TBB, then the submodule. TSan builds use the submodule compiled with `-fsanitize=thread`,
+  so the TBB engines are now race-checked in CI. `check_env.sh` reports the submodule and
+  offers `git submodule update --init` for a missing TBB; `.meta.json` records `tbb_source`.
 - `.github/workflows/macos.yml`: README quick start on macOS 14 and 15 (with oneTBB installed
   by `check_env.sh --yes`, and without TBB), zsh/bash `env.sh`, and an ASan/UBSan job.
 

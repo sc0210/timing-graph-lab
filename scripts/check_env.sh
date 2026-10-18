@@ -30,6 +30,8 @@ done
 # Never prompt without a terminal (CI, pipes).
 if [ "$MODE" = ask ] && { [ ! -t 0 ] || [ -n "${CI:-}" ]; }; then MODE=check; fi
 
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+TBB_SUBMODULE=third_party/oneTBB
 CXX_BIN="${CXX:-c++}"
 CXX_EXE="${CXX_BIN%% *}"  # CXX may carry flags, as CMake allows (e.g. "clang++ -stdlib=libc++")
 PY="${PYTHON:-python3}"
@@ -87,14 +89,12 @@ pkg() {
     brew:compiler | brew:make) echo "@xcode" ;;
     brew:python) echo python ;;
     brew:git) echo git ;;
-    brew:tbb) echo tbb ;;
     brew:clang-format) echo clang-format ;;
     brew:matplotlib) echo "@pip" ;;
     apt:cmake) echo cmake ;;
     apt:compiler | apt:make) echo build-essential ;;
     apt:python) echo python3 ;;
     apt:git) echo git ;;
-    apt:tbb) echo libtbb-dev ;;
     apt:clang-format) echo clang-format ;;
     apt:matplotlib) echo python3-matplotlib ;;
     dnf:cmake) echo cmake ;;
@@ -102,17 +102,26 @@ pkg() {
     dnf:make) echo make ;;
     dnf:python) echo python3 ;;
     dnf:git) echo git ;;
-    dnf:tbb) echo tbb-devel ;;
     dnf:clang-format) echo clang-tools-extra ;;
     dnf:matplotlib) echo python3-matplotlib ;;
     pacman:cmake) echo cmake ;;
     pacman:compiler | pacman:make) echo base-devel ;;
     pacman:python) echo python ;;
     pacman:git) echo git ;;
-    pacman:tbb) echo onetbb ;;
     pacman:clang-format) echo clang ;;
     pacman:matplotlib) echo python-matplotlib ;;
+    *:tbb) echo "@submodule" ;;
     *) echo "" ;;
+  esac
+}
+
+# System package for oneTBB, mentioned as the alternative to the bundled submodule.
+tbb_system_pkg() {
+  case "$PM" in
+    brew) echo "brew install tbb" ;;
+    apt) echo "${SUDO}apt-get install -y libtbb-dev" ;;
+    dnf) echo "${SUDO}dnf install -y tbb-devel" ;;
+    pacman) echo "${SUDO}pacman -S --needed onetbb" ;;
   esac
 }
 
@@ -227,9 +236,13 @@ check_tbb() {
     >"$TMP/tbb.cpp"
   # shellcheck disable=SC2086
   if have "$CXX_EXE" && $CXX_BIN -std=c++20 $flags "$TMP/tbb.cpp" -o "$TMP/tbb" -ltbb >/dev/null 2>&1; then
-    STATUS=ok DETAIL="oneTBB $("$TMP/tbb")"
+    STATUS=ok DETAIL="oneTBB $("$TMP/tbb") (system)"
+  elif [ -f "$ROOT/$TBB_SUBMODULE/CMakeLists.txt" ]; then
+    v=$(awk '/^#define TBB_VERSION_MAJOR /{a=$3} /^#define TBB_VERSION_MINOR /{b=$3} END{print a "." b}' \
+      "$ROOT/$TBB_SUBMODULE/include/oneapi/tbb/version.h")
+    STATUS=ok DETAIL="oneTBB $v (bundled $TBB_SUBMODULE, built with the project)"
   else
-    STATUS=missing DETAIL="not found"
+    STATUS=missing DETAIL="not found; submodule $TBB_SUBMODULE not checked out"
   fi
 }
 
@@ -270,13 +283,14 @@ run_checks() {
 # ---------------------------------------------------------------- install plan
 # install_cmds KEYS...: prints one shell command per line that installs those keys.
 install_cmds() {
-  pkgs="" xcode="" pip=""
+  pkgs="" xcode="" pip="" sub=""
   for k in "$@"; do
     p=$(pkg "$k")
     case "$p" in
       "") ;;
       @xcode) xcode=1 ;;
       @pip) pip=1 ;;
+      @submodule) sub=1 ;;
       *) case " $pkgs " in *" $p "*) ;; *) pkgs="$pkgs $p" ;; esac ;;
     esac
   done
@@ -290,6 +304,7 @@ install_cmds() {
     esac
   fi
   [ -n "$pip" ] && echo "$PY -m pip install --user matplotlib"
+  [ -n "$sub" ] && echo "git -C \"$ROOT\" submodule update --init --depth 1 $TBB_SUBMODULE"
   return 0
 }
 
@@ -318,6 +333,9 @@ print_report() {
   echo "To install them:"
   # shellcheck disable=SC2086
   install_cmds $MISSING_REQ $MISSING_OPT | sed 's/^/    /'
+  case " $MISSING_OPT " in
+    *" tbb "*) [ -n "$(tbb_system_pkg)" ] && echo "    (oneTBB alternative: a system package instead of the submodule: $(tbb_system_pkg))" ;;
+  esac
 }
 
 # ---------------------------------------------------------------- main

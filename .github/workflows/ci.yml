@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build-test:
-    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}${{ matrix.tbb == 'OFF' && ' / no TBB' || '' }}
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}${{ matrix.tbb == 'OFF' && ' / no TBB' || '' }}${{ matrix.tbb == 'BUNDLED' && ' / bundled TBB' || '' }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -25,10 +25,13 @@ jobs:
           - { compiler: clang, cxx: clang++-18, build_type: Release }
           - { compiler: gcc, cxx: g++-13, build_type: Debug }
           - { compiler: gcc, cxx: g++-13, build_type: Release, tbb: "OFF" }
+          - { compiler: gcc, cxx: g++-13, build_type: Release, tbb: "BUNDLED" }
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: ${{ matrix.tbb == 'BUNDLED' }}
       - name: Install oneTBB
-        if: matrix.tbb != 'OFF'
+        if: matrix.tbb != 'OFF' && matrix.tbb != 'BUNDLED'
         run: sudo apt-get update && sudo apt-get install -y libtbb-dev
       - name: Toolchain check
         run: scripts/check_env.sh --check
@@ -50,11 +53,14 @@ jobs:
           - { sanitizer: thread, build_type: RelWithDebInfo }
     steps:
       - uses: actions/checkout@v4
+        with:
+          # TSan builds the bundled oneTBB with -fsanitize=thread, so the TBB engines are race-checked too.
+          submodules: ${{ matrix.sanitizer == 'thread' }}
       # TSan needs fewer mmap randomization bits than the runner's kernel default.
       - name: Reduce ASLR entropy for TSan
         if: matrix.sanitizer == 'thread'
         run: sudo sysctl vm.mmap_rnd_bits=28
-      # ASan checks the oneTBB engines too; TSan builds leave TBB off (libtbb is not instrumented).
+      # ASan uses the system oneTBB; TSan uses the instrumented submodule (see checkout).
       - name: Install oneTBB
         if: matrix.sanitizer == 'address'
         run: sudo apt-get update && sudo apt-get install -y libtbb-dev

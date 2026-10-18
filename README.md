@@ -92,13 +92,26 @@ cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTGL_SANITIZER=threa
 
 ### Optional: oneTBB engines
 
-With [oneTBB](https://github.com/uxlfoundation/oneTBB) installed (`sudo apt install libtbb-dev`,
-`brew install tbb`), CMake finds it automatically (`TGL_TBB=AUTO`) and two more parallel
-engines are built. Use `-DTGL_TBB=ON` to require TBB or `-DTGL_TBB=OFF` to leave it out.
-Without TBB everything else builds and runs unchanged.
+[oneTBB](https://github.com/uxlfoundation/oneTBB) comes with the repository as a git
+submodule (`third_party/oneTBB`, pinned to v2022.3.0), so no system package is needed.
+Clone with `--recursive`, or fetch it later (`scripts/check_env.sh` offers this too):
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTGL_TBB=ON && cmake --build build -j
+git clone --recursive https://github.com/sc0210/timing-graph-lab      # or, in an existing clone:
+git submodule update --init --depth 1 third_party/oneTBB
+```
+
+| `-DTGL_TBB=` | oneTBB used |
+|---|---|
+| `AUTO` (default) | system package if installed (faster to build), else the submodule if checked out, else none |
+| `ON` | like `AUTO`, but an error if neither is available |
+| `BUNDLED` | always the submodule (built with the project, ≈ 40 s) |
+| `OFF` | none |
+
+Without TBB everything else builds and runs unchanged; the two TBB engines are simply absent.
+
+```bash
+cmake -S . -B build -DTGL_TBB=ON && cmake --build build -j
 ./build/timing_graph_bench --topology layered --nodes 1000000 --algorithm timing,parallel \
   --representation csr --barrier spin,block,tbb,tbb_dag --threads 1,2,4
 python3 scripts/run_suite.py configs/parallel_tbb.json    # Experiment D with the TBB engines
@@ -110,8 +123,9 @@ python3 scripts/run_suite.py configs/parallel_tbb.json    # Experiment D with th
 | `tbb` | `level_parallel_tbb` | one `tbb::parallel_for` per level (work stealing, 256-node grain); levels ≤ 256 nodes run inline |
 | `tbb_dag` | `dag_parallel_tbb` | no levels: a node runs when its last predecessor finishes (atomic counters + `parallel_for_each` feeder); needs a `dag_prepare` pass |
 
-TSan builds leave TBB off under `AUTO`, because a prebuilt `libtbb` is not instrumented
-and TSan reports false races inside TBB's task allocator. ASan/UBSan builds include it.
+TSan builds use the submodule under `AUTO`: it is compiled with `-fsanitize=thread`, so the
+TBB engines are race-checked as well. A prebuilt `libtbb` is not instrumented and makes
+TSan report false races inside TBB, so without the submodule TSan builds leave TBB off.
 
 ### Shell environment
 
@@ -158,6 +172,7 @@ baseline: 100,000 nodes, 100 layers, fanout target 4, seed 20261017, update rati
 | `include/graph/traversal.hpp` | Kahn (with indegree-init timing), DFS topo sort, BFS, levelization (§6.1) |
 | `include/sta/arrival.hpp`, `required.hpp` | Pull / push arrival, required, slack, level-parallel versions (§6.2, §6.3, §6.6) |
 | `include/sta/level_pool.hpp` | Fixed worker pool, one barrier per level; spin or blocking barrier (§6.6) |
+| `third_party/oneTBB` | oneTBB v2022.3.0 as a git submodule (optional; see [oneTBB engines](#optional-onetbb-engines)) |
 | `include/sta/tbb_parallel.hpp` | Optional oneTBB engines: level-parallel `parallel_for` and dependency-driven DAG scheduling |
 | `include/sta/incremental.hpp` | Incremental STA, conservative and early-stop modes (§6.4, §6.5) |
 | `include/sta/oracle.hpp` | Path-enumeration and relaxation oracles, independent O(V+E) reference engine (§7.3) |
