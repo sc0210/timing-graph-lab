@@ -38,6 +38,9 @@ else()
 endif()
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+# No fused multiply-add contraction: Clang contracts a*b+c by default on arm64 (Apple
+# Silicon), which changes rounding and breaks bit-identical results across platforms.
+add_compile_options(-ffp-contract=off)
 if(TGL_NATIVE)
   add_compile_options(-march=native)
 endif()

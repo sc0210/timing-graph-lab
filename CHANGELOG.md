@@ -26,6 +26,9 @@ are listed under **Changed**, because they break comparability with earlier resu
   by `check_env.sh --yes`, and without TBB), zsh/bash `env.sh`, and an ASan/UBSan job.
 
 ### Fixed
+- Regression goldens failed on Apple Silicon: Clang contracts `a*b+c` into FMA by default
+  on arm64, which changes rounding in the generators. All builds now use
+  `-ffp-contract=off`; x86-64 results are unchanged (no FMA without `-march`).
 - macOS: `peak_rss_bytes` multiplied `ru_maxrss` by 1024, but macOS reports bytes (1024× too
   large); CPU model, total memory and load average are now recorded on macOS too
   (`sysctl`, `os.getloadavg`) instead of `unknown`. `env.sh` no longer sets
