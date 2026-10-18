@@ -1,0 +1,604 @@
+tgl-trace 1
+# 200-node reconvergent DAG (timing_graph_bench --topology reconvergent --nodes 200 --layers 10
+# --fanout 3 --delay-dist int --seed 7). Random edits with a full check after every update.
+graph reconvergent_200.el
+arrival 0 5
+period 400
+check
+update
+check
+set 514 70
+set 57 35
+set 190 0
+set 245 0
+set 77 76
+set 513 0
+set 496 0
+set 175 0
+set 32 0
+set 301 0
+set 81 250
+set 530 250
+set 502 66
+set 30 250
+set 204 0
+set 136 16
+update conservative
+check
+update
+check
+set 382 91
+update early_stop
+check
+update
+check
+set 193 0
+set 536 88
+set 419 66
+set 466 25
+set 389 0
+set 22 0
+update conservative
+check
+set 46 250
+set 417 49
+set 356 250
+set 229 0
+set 436 26
+set 32 250
+set 169 79
+set 391 49
+set 392 0
+set 180 88
+set 300 88
+set 52 59
+set 214 30
+set 404 20
+update conservative
+check
+set 263 0
+update early_stop
+check
+set 56 0
+set 4 97
+set 261 250
+set 404 52
+set 157 250
+set 189 100
+set 137 0
+set 456 250
+set 41 16
+set 112 76
+set 237 66
+set 101 250
+set 16 63
+set 169 33
+set 296 0
+set 164 0
+set 395 0
+set 167 250
+set 96 91
+set 410 3
+set 219 0
+update conservative
+check
+set 11 250
+set 353 0
+set 163 250
+set 283 250
+set 312 53
+set 275 0
+set 302 70
+set 346 250
+set 228 49
+set 448 250
+set 389 250
+set 430 250
+set 513 250
+set 334 47
+set 41 250
+set 132 51
+update conservative
+check
+set 510 27
+set 250 0
+update early_stop
+check
+set 323 69
+set 225 0
+set 3 0
+set 74 74
+set 413 42
+set 248 57
+set 161 0
+update early_stop
+check
+update
+check
+set 384 65
+update early_stop
+check
+set 137 250
+set 142 0
+set 10 0
+set 433 3
+set 35 0
+set 360 250
+set 156 0
+set 92 0
+set 227 29
+set 474 60
+set 329 0
+set 110 250
+set 516 61
+set 466 250
+set 383 0
+set 309 0
+set 19 0
+set 156 250
+set 375 59
+set 202 250
+set 78 250
+set 200 0
+set 123 250
+set 7 0
+update early_stop
+check
+reset
+check
+reset
+check
+reset
+check
+update
+check
+set 59 250
+update early_stop
+check
+set 108 24
+update conservative
+check
+set 167 47
+update conservative
+check
+set 88 28
+set 281 8
+set 383 54
+update conservative
+check
+set 528 89
+set 112 250
+set 36 250
+set 501 42
+set 306 0
+set 374 2
+set 58 250
+set 443 35
+set 157 250
+set 418 0
+set 346 0
+set 181 0
+set 299 0
+set 491 0
+set 299 250
+set 63 9
+set 443 250
+set 139 0
+set 405 0
+set 72 250
+set 326 250
+set 224 0
+set 355 0
+update early_stop
+check
+set 479 10
+update early_stop
+check
+set 25 100
+update early_stop
+check
+update
+check
+set 256 24
+update early_stop
+check
+set 125 250
+update early_stop
+check
+set 373 0
+update conservative
+check
+set 202 16
+set 42 89
+set 252 0
+set 246 11
+set 225 88
+set 405 250
+set 334 64
+set 301 250
+set 483 25
+set 401 94
+set 535 250
+set 519 250
+set 312 250
+set 418 250
+set 61 57
+set 172 250
+set 144 86
+set 196 0
+set 41 250
+set 418 0
+set 218 0
+update conservative
+check
+set 505 22
+update conservative
+check
+set 501 38
+update conservative
+check
+set 218 0
+update conservative
+check
+set 290 0
+set 27 87
+set 518 250
+set 131 250
+set 161 250
+set 290 250
+update early_stop
+check
+set 353 53
+update early_stop
+check
+update
+check
+set 429 0
+update conservative
+check
+set 308 7
+update early_stop
+check
+update
+check
+set 510 0
+set 512 35
+set 423 56
+set 385 22
+set 206 0
+set 273 21
+set 65 250
+set 401 82
+set 135 0
+set 195 0
+set 129 0
+set 194 50
+set 510 0
+set 443 250
+set 497 9
+set 430 73
+set 206 12
+update early_stop
+check
+update
+check
+set 26 0
+update early_stop
+check
+update
+check
+update
+check
+set 140 72
+set 72 52
+set 20 250
+set 183 34
+set 175 51
+set 47 0
+set 339 0
+set 331 2
+set 266 20
+set 251 95
+set 35 83
+set 318 0
+set 299 61
+set 522 0
+set 393 50
+set 98 0
+set 417 13
+set 448 250
+set 60 50
+update early_stop
+check
+reset
+check
+set 184 97
+set 485 21
+set 330 0
+set 460 39
+set 259 250
+set 421 250
+set 106 250
+set 489 36
+set 247 250
+set 164 0
+set 456 74
+set 63 0
+set 191 0
+set 382 0
+set 140 60
+set 299 49
+set 336 52
+set 488 250
+set 263 0
+set 52 250
+set 474 250
+update early_stop
+check
+set 116 45
+set 285 0
+set 90 14
+set 212 17
+set 350 44
+set 462 22
+set 107 250
+update conservative
+check
+set 537 74
+update early_stop
+check
+set 479 81
+update early_stop
+check
+set 366 50
+update conservative
+check
+update
+check
+set 241 30
+set 54 250
+set 374 250
+set 378 18
+set 358 0
+set 370 18
+update conservative
+check
+set 72 29
+set 500 10
+update early_stop
+check
+set 208 0
+set 17 250
+set 333 0
+set 117 34
+set 24 0
+set 309 55
+set 529 48
+set 503 20
+set 327 0
+set 282 0
+set 455 88
+set 466 0
+set 89 80
+set 295 250
+set 12 93
+set 8 0
+set 31 71
+set 11 0
+set 466 13
+set 133 250
+set 525 60
+set 205 63
+update conservative
+check
+update
+check
+set 252 250
+set 469 14
+set 112 0
+set 307 68
+set 293 250
+set 484 0
+set 516 40
+set 415 250
+set 276 37
+set 212 250
+set 61 81
+set 80 2
+set 507 0
+set 51 250
+set 92 250
+set 210 46
+set 141 250
+set 330 0
+set 45 250
+set 138 0
+set 298 32
+set 110 0
+set 88 80
+set 518 27
+update conservative
+check
+set 429 21
+set 461 0
+set 508 0
+set 506 250
+set 200 250
+set 226 60
+set 247 250
+set 234 250
+set 348 79
+set 298 250
+set 50 250
+set 322 0
+set 286 86
+set 111 18
+set 64 0
+set 125 0
+set 151 24
+set 382 41
+set 299 0
+set 72 75
+set 342 250
+update early_stop
+check
+set 282 250
+set 526 250
+set 486 0
+set 107 250
+set 148 250
+set 81 0
+set 75 0
+set 171 250
+set 10 250
+set 424 8
+set 171 47
+set 173 22
+set 520 250
+set 433 250
+set 435 250
+set 515 250
+set 242 250
+update early_stop
+check
+set 501 250
+update early_stop
+check
+set 538 0
+update conservative
+check
+set 291 0
+set 342 0
+set 91 87
+set 164 97
+set 368 73
+set 446 250
+set 38 48
+set 114 0
+set 221 0
+set 478 250
+set 409 0
+set 213 0
+set 4 0
+set 179 99
+update conservative
+check
+set 25 44
+set 21 250
+set 162 250
+set 0 100
+set 520 250
+set 94 0
+set 76 86
+set 236 5
+set 11 47
+set 38 17
+set 83 0
+set 174 250
+set 2 250
+set 454 8
+set 504 73
+set 347 53
+set 392 52
+set 64 250
+set 211 250
+set 176 250
+set 270 57
+set 402 12
+set 252 0
+set 339 250
+update conservative
+check
+set 459 3
+update conservative
+check
+set 196 0
+set 303 4
+set 255 2
+set 269 61
+set 448 0
+set 504 0
+set 267 80
+set 306 46
+set 49 250
+set 268 250
+set 326 0
+set 211 25
+set 108 63
+set 101 77
+set 273 4
+set 114 250
+set 29 71
+set 79 89
+set 112 65
+set 133 7
+set 530 10
+set 460 250
+update conservative
+check
+update
+check
+set 202 0
+set 173 37
+set 250 0
+set 219 67
+set 511 34
+set 126 28
+set 475 0
+set 278 250
+set 205 69
+set 52 0
+set 184 67
+set 135 72
+set 170 47
+set 323 79
+set 434 0
+set 505 250
+set 423 96
+set 240 0
+set 145 31
+set 182 32
+set 19 94
+set 213 0
+set 428 250
+set 267 83
+update conservative
+check
+set 346 0
+set 219 8
+set 69 10
+set 247 42
+set 254 0
+set 325 0
+set 538 62
+set 45 99
+update early_stop
+check
+set 207 250
+set 159 86
+update early_stop
+check
+set 408 0
+update early_stop
+check
+update
+check
+update
+check
+set 304 250
+update early_stop
+check
+reset
+check
+set 375 0
+update early_stop
+check
+reset
+check
+set 513 0
+update early_stop
+check
+update
+check
+reset
+check

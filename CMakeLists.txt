@@ -9,6 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(TGL_SANITIZER "" CACHE STRING "Sanitizer build: '' | address (ASan+UBSan) | thread (TSan)")
+option(TGL_FUZZ "Build libFuzzer targets (Clang only; implies ASan + UBSan)" OFF)
 option(TGL_NATIVE "Compile with -march=native (results become CPU-specific)" OFF)
 set(TGL_TBB AUTO CACHE STRING
     "oneTBB engines (level_parallel_tbb, dag_parallel_tbb): AUTO | ON | BUNDLED | OFF")
@@ -30,6 +31,17 @@ elseif(TGL_SANITIZER STREQUAL "thread")
   add_link_options(-fsanitize=thread)
 elseif(NOT TGL_SANITIZER STREQUAL "")
   message(FATAL_ERROR "TGL_SANITIZER must be '', address or thread")
+endif()
+if(TGL_FUZZ)
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "TGL_FUZZ needs Clang (libFuzzer)")
+  endif()
+  if(TGL_SANITIZER STREQUAL "thread")
+    message(FATAL_ERROR "TGL_FUZZ cannot be combined with TGL_SANITIZER=thread")
+  endif()
+  # Coverage instrumentation for all code; the fuzzer runtime is linked into fuzz targets only.
+  add_compile_options(-fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all)
+  add_link_options(-fsanitize=address,undefined)
 endif()
 
 # oneTBB, after the compile options above so that a bundled build inherits the sanitizer.
@@ -101,13 +113,17 @@ add_library(tgl
   src/graph/edge_list.cpp
   src/graph/csr_graph.cpp
   src/graph/generators.cpp
-  src/sta/incremental.cpp)
+  src/sta/incremental.cpp
+  src/sta/trace.cpp)
 target_include_directories(tgl PUBLIC include)
 target_link_libraries(tgl PUBLIC Threads::Threads)
 if(TGL_HAVE_TBB)
   target_link_libraries(tgl PUBLIC TBB::tbb)
   target_compile_definitions(tgl PUBLIC TGL_HAVE_TBB=1)
 endif()
+
+add_executable(timing_graph_trace src/tools/timing_graph_trace.cpp)
+target_link_libraries(timing_graph_trace PRIVATE tgl)
 
 add_executable(timing_graph_bench src/benchmark/timing_graph_bench.cpp)
 target_link_libraries(timing_graph_bench PRIVATE tgl)
@@ -117,17 +133,37 @@ target_compile_definitions(timing_graph_bench PRIVATE
   TGL_CXX_FLAGS="${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_bt}}")
 
 enable_testing()
-foreach(suite unit property differential regression)
+foreach(suite unit property differential regression stress trace)
   add_executable(test_${suite} tests/${suite}/test_${suite}.cpp)
   target_link_libraries(test_${suite} PRIVATE tgl)
   add_test(NAME ${suite} COMMAND test_${suite})
   set_tests_properties(${suite} PROPERTIES LABELS ${suite})
 endforeach()
+target_compile_definitions(test_trace PRIVATE TGL_TRACE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/traces")
 
 add_test(NAME bench_smoke
   COMMAND timing_graph_bench --topology reconvergent --nodes 3000 --layers 30 --repetitions 1 --warmup 0
           --threads 1,2 --output ${CMAKE_BINARY_DIR}/bench_smoke.csv)
 set_tests_properties(bench_smoke PROPERTIES LABELS integration)
+# Fuzz targets. Each is always built as <target>_replay (corpus + deterministic random
+# inputs, a regular test on every compiler); TGL_FUZZ=ON also builds the libFuzzer binary.
+foreach(target edge_list_reader engine)
+  add_executable(fuzz_${target}_replay fuzz/fuzz_${target}.cpp fuzz/standalone_driver.cpp)
+  target_link_libraries(fuzz_${target}_replay PRIVATE tgl)
+  if(TGL_FUZZ)
+    add_executable(fuzz_${target} fuzz/fuzz_${target}.cpp)
+    target_link_libraries(fuzz_${target} PRIVATE tgl)
+    target_link_options(fuzz_${target} PRIVATE -fsanitize=fuzzer)
+  endif()
+endforeach()
+add_test(NAME fuzz_edge_list_reader_replay
+  COMMAND fuzz_edge_list_reader_replay ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/corpus/edge_list_reader)
+add_test(NAME fuzz_engine_replay
+  COMMAND fuzz_engine_replay --random 3000 ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/corpus/engine)
+set_tests_properties(fuzz_edge_list_reader_replay fuzz_engine_replay PROPERTIES LABELS fuzz)
+
+add_test(NAME trace_cli COMMAND timing_graph_trace ${CMAKE_CURRENT_SOURCE_DIR}/tests/traces/plan_example.trace)
+set_tests_properties(trace_cli PROPERTIES LABELS integration)
 if(TGL_HAVE_TBB)
   add_test(NAME bench_smoke_tbb
     COMMAND timing_graph_bench --topology reconvergent --nodes 3000 --layers 30 --repetitions 1 --warmup 0

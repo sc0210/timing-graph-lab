@@ -8,10 +8,13 @@ before any performance conclusion (§7).
 
 | Level | Suite | Tests | What it establishes |
 |---|---|---|---|
-| L1 | `tests/unit` | 21 | T01–T14 of §7.2 plus representation, comparison, I/O and stats details |
+| L1 | `tests/unit` | 22 | T01–T14 of §7.2 plus representation, comparison, I/O and stats details |
 | L2 | `tests/property` | 8 | §5.3 generator requirements and §3 invariants over 100 random graphs (4 topologies × 25 seeds, real and integer delays) |
 | L3 | `tests/differential` | 5 | All engine variants vs. independent oracles; oracles vs. each other |
-| L4 | `tests/regression` | 4 | Pinned generator fingerprints and timing checksums for 16 fixed graphs; bugs found during development |
+| L3 | `tests/stress` | 11 | Degenerate graphs through every engine: 200K-fanout and 200K-fanin stars, a 1M-level chain, isolated nodes, duplicate parallel arcs, delays spanning 1e-3 to 1e6, all-zero delays, complete DAG and bipartite graphs, per-node constraints, an incremental edit storm |
+| L3 | `tests/trace` + `tests/traces/*.trace` | 4 | Incremental operation traces (edits, updates in both modes, resets, exact expectations) replayed against the reference after every check; 60 random traces; negative tests prove the replayer reports failures |
+| L3 | `fuzz/` (`fuzz_*_replay` in CTest, libFuzzer in CI) | 2 targets | Edge-list reader on untrusted input; differential fuzzing of every engine and the incremental timer against the reference |
+| L4 | `tests/regression` | 5 | Pinned generator fingerprints and timing checksums for 16 fixed graphs; bugs found during development |
 | L5 | `bench_smoke` + `run_suite.py` | — | Benchmarks run only after L1–L4 and sanitizer builds pass; every measured row is re-verified |
 
 ### Required test cases (§7.2)
@@ -89,6 +92,21 @@ Each mutation was applied to a scratch copy and the suites rerun:
 | The relaxation oracle accepted a cycle with no source: all AT stay −∞, so it "converged" immediately | `relaxation_oracle_rejects_cycle` | `relaxation_oracle_rejects_sourceless_cycle` |
 | Timing checksum (FNV over raw double bits) gave identical low 32 bits for all equal-size graphs with integer delays | inspecting regression goldens | `timing_checksum_mixes_all_bits` |
 | Path oracle summed each path from the source, so it differed from the DP in the last bit with real delays | exhaustive oracle test | oracle now accumulates in DP order; covered by `oracles_agree_exhaustively_on_tiny_graphs` |
+| `LevelPool::run` on a graph with no levels returned before its workers had read the job, so a worker could dereference the caller's destroyed `Levels` (ASan stack-use-after-return; segfault in Release with a reused pool). Present since v0.1.0. | `fuzz_engine`, on its first run | `level_pool_empty_graph_with_threads` (fails under ASan without the fix in 3 of 3 runs) |
+| `read_edge_list` trusted the edge count in the header and allocated it up front: a 30-byte file declaring 4 billion edges requested ≈ 64 GB | review while adding the reader fuzzer | `parse_edge_list` bounds counts by input size; seed `fuzz/corpus/edge_list_reader/forged_edge_count` |
+
+## 6a. Fuzzing
+
+Two libFuzzer targets (Clang 18, ASan + UBSan, coverage-guided), run locally for 3 minutes each
+before the first commit and for 60 s per target in every CI run:
+
+| Target | Inputs executed (local run) | Coverage edges | Findings |
+|---|---|---|---|
+| `fuzz_edge_list_reader` | 2,078,145 | 355 | none after the header-count fix |
+| `fuzz_engine` | 186,182 | 1,124 | the `LevelPool` bug above, found within the first second |
+
+The minimized corpora (174 and 323 inputs) are committed in `fuzz/corpus/` and replayed by the
+`fuzz_*_replay` CTest tests on every compiler, together with 3,000 pseudo-random engine inputs.
 
 ## 7. Benchmark-time verification
 

@@ -8,6 +8,19 @@ are listed under **Changed**, because they break comparability with earlier resu
 ## [Unreleased]
 
 ### Added
+- Stress testbench (`tests/stress`): degenerate graphs (200K-fanout/fanin stars, a 1M-level
+  chain, duplicate arcs, delays from 1e-3 to 1e6, zero delays, dense DAGs, per-node
+  constraints, incremental edit storms), each run through every engine via the shared
+  `tests/engine_check.hpp`.
+- Incremental operation traces: `include/sta/trace.hpp` format and replayer, the
+  `timing_graph_trace` CLI, committed traces in `tests/traces/` with hand-computed
+  expectations, and `tests/trace` (committed, random and malformed traces).
+- Fuzzing (`fuzz/`): libFuzzer targets for the edge-list reader and a differential
+  engine/incremental fuzzer (`-DTGL_FUZZ=ON`, Clang); minimized corpora; standalone
+  `fuzz_*_replay` tests on every compiler; a 60 s-per-target fuzz job in CI.
+- `parse_edge_list()`: in-memory edge-list parser used by `read_edge_list`, and
+  `parse_double()`, a portable replacement for floating-point `std::from_chars`, which
+  libc++ (Apple Clang, LLVM < 20) does not provide.
 - Optional oneTBB engines (`include/sta/tbb_parallel.hpp`), built when CMake finds TBB
   (`-DTGL_TBB=AUTO|ON|BUNDLED|OFF`, default `AUTO`):
   `--barrier tbb` (`level_parallel_tbb`, one `parallel_for` per level) and
@@ -31,6 +44,13 @@ are listed under **Changed**, because they break comparability with earlier resu
   by `check_env.sh --yes`, and without TBB), zsh/bash `env.sh`, and an ASan/UBSan job.
 
 ### Fixed
+- `LevelPool::run` on an empty graph (no levels) returned before its worker threads had read
+  the job, so they could read the caller's destroyed `Levels` (use-after-return; crash with a
+  reused pool). Found by the new engine fuzzer. The pool also stores the per-pass callback by
+  value instead of pointing at the caller's temporary.
+- `read_edge_list` allocated the edge count declared in the header before reading any edge,
+  so a tiny forged file could request gigabytes. Counts are now bounded by the input size,
+  node counts by a limit (2^28 by default), and trailing content is rejected.
 - Regression goldens failed on Apple Silicon: Clang contracts `a*b+c` into FMA by default
   on arm64, which changes rounding in the generators. All builds now use
   `-ffp-contract=off`; x86-64 results are unchanged (no FMA without `-march`).
