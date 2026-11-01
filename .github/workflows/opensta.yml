@@ -29,7 +29,7 @@ jobs:
     name: OpenSTA equivalence matrix
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install OpenSTA build dependencies
         run: sudo apt-get update && sudo apt-get install -y tcl-dev swig bison flex libfl-dev libeigen3-dev zlib1g-dev autoconf automake libtool
       - name: Cache OpenSTA
