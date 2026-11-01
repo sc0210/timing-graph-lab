@@ -34,7 +34,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tcl-dev swig bison flex libfl-dev libeigen3-dev zlib1g-dev autoconf automake libtool
       - name: Cache OpenSTA
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/opensta
           key: opensta-${{ env.OPENSTA_COMMIT }}-cudd-${{ env.CUDD_COMMIT }}-ubuntu-24.04
