@@ -79,7 +79,7 @@ jobs:
     name: fuzz (libFuzzer, 60 s per target)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install the libFuzzer runtime
         run: sudo apt-get update && sudo apt-get install -y libclang-rt-18-dev
       - name: Configure
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: build-test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
